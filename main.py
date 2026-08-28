@@ -10,7 +10,7 @@ st.set_page_config(page_title="포켓몬 위키", page_icon="⚡", layout="wide"
 
 # Session State 초기화
 if "search_query" not in st.session_state:
-  st.session_state.search_query = "383"  # 기본값: No.383 (그란돈)
+  st.session_state.search_query = "658"  # 기본값: No.658 (개굴닌자)
 
 
 # 검색어 업데이트 콜백
@@ -453,6 +453,10 @@ def get_special_forms(species_data, base_ko_name):
     if is_default:
       continue
 
+    # 개굴닌자 등의 불필요한 일반 변형 폼 제외 조건
+    if "greninja" in v_name and "ash" not in v_name:
+      continue
+
     form_type = ""
     form_ko_title = ""
     form_desc = ""
@@ -492,7 +496,9 @@ def get_special_forms(species_data, base_ko_name):
     elif "ash" in v_name:
       form_type = "유대진화"
       form_ko_title = f"{base_ko_name} (지우개굴닌자)"
-      form_desc = "트레이너와의 강한 유대로 인해 한계 이상으로 변한 모습입니다."
+      form_desc = (
+          "트레이너와의 강한 유대로 인해 한계 이상으로 변한 유대진화 모습입니다."
+      )
     else:
       form_type = "폼 체인지"
       form_ko_title = f"{base_ko_name} (변형)"
@@ -508,7 +514,7 @@ def get_special_forms(species_data, base_ko_name):
         )
         shiny_img_url = (
             p_data["sprites"]["other"]["official-artwork"]["front_shiny"]
-            or p_data["sprites"]["front_shiny"]
+            or p_data["sprites"]["shiny_default"]
         )
 
         types_raw = [t["type"]["name"] for t in p_data["types"]]
@@ -522,9 +528,6 @@ def get_special_forms(species_data, base_ko_name):
           s_val = s["base_stat"]
           stats_dict[s_name] = s_val
           total_stats += s_val
-
-        if not form_ko_title:
-          form_ko_title = f"{base_ko_name} 폼"
 
         main_flavor = extract_single_flavor_text(species_data)
 
@@ -821,9 +824,7 @@ if st.session_state.search_query:
           )
           st.write("##### **[공격 상성]** (자신의 타입 기술로 공격 시 배율)")
           st.markdown(
-              render_type_name_table
-              if "render_type_name_table" in locals()
-              else render_type_table(
+              render_type_table(
                   form_info["atk_effectiveness"], is_defense=False
               ),
               unsafe_allow_html=True,
