@@ -298,8 +298,7 @@ def search_pokemon_id_by_name(query_name):
   except Exception:
     pass
 
-  # 2. 전국도감 범위 내 한글 검색 (한글 조회 시 캐시 활용)
-  # 한번 검색된 포켓몬은 캐시에 남음
+  # 2. 전국도감 범위 내 한글 검색
   for i in range(1, 1026):
     name = get_pokemon_name_by_id(i)
     if name == query_name:
@@ -453,8 +452,25 @@ st.text_input(
 )
 
 if st.session_state.search_query:
-  with st.spinner("포켓몬 정보를 조회하는 중..."):
-    data = get_pokemon_data(st.session_state.search_query)
+  query_text = str(st.session_state.search_query).strip()
+
+  # 입력 형태에 따른 예상 대기 시간 메시지 분기
+  if query_text.isdigit():
+    loading_msg = (
+        f"⚡ No.{query_text} 포켓몬 정보 조회 중... (예상 대기시간: 약 0.5초)"
+    )
+  elif query_text.isascii():
+    loading_msg = (
+        f"⚡ '{query_text}' 영문 정보 조회 중... (예상 대기시간: 약 0.5초)"
+    )
+  else:
+    loading_msg = (
+        f"🔍 '{query_text}' 한글 포켓몬 검색 중... (예상 대기시간: 최초 1~3초,"
+        " 재검색 시 즉시)"
+    )
+
+  with st.spinner(loading_msg):
+    data = get_pokemon_data(query_text)
 
   if data:
     current_id = data["id"]
