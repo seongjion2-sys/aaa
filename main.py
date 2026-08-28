@@ -473,7 +473,6 @@ def get_special_forms(species_data, base_ko_name, species_name):
   special_forms = []
   varieties = species_data.get("varieties", [])
 
-  # 1. 일반적인 varieties 기반 폼 추출 (켄타로스의 팔데아 제네릭 형태는 제외)
   for v in varieties:
     is_default = v.get("is_default", False)
     v_name = v["pokemon"]["name"]
@@ -563,24 +562,23 @@ def get_special_forms(species_data, base_ko_name, species_name):
     except Exception:
       pass
 
-  # 2. 켄타로스 전용: 컴뱃종, 블레이즈종, 아쿠아종만 명확하게 추가
   if species_name == "tauros":
     breed_forms = [
         (
             f"{species_name}-paldea-combat-breed",
-            "컴뱃종",
+            "컴뱃폼",
             f"{base_ko_name} (컴뱃종)",
             "격투 타입의 힘을 지닌 팔데아 켄타로스의 기본 품종입니다.",
         ),
         (
             f"{species_name}-paldea-blaze-breed",
-            "블레이즈종",
+            "블레이즈폼",
             f"{base_ko_name} (블레이즈종)",
             "화난 듯한 붉은 털과 불꽃/격투 타입을 지닌 팔데아 켄타로스입니다.",
         ),
         (
             f"{species_name}-paldea-aqua-breed",
-            "아쿠아종",
+            "아쿠아폼",
             f"{base_ko_name} (아쿠아종)",
             "물결 같은 뿔과 물/격투 타입을 지닌 팔데아 켄타로스입니다.",
         ),
@@ -636,21 +634,34 @@ def get_special_forms(species_data, base_ko_name, species_name):
 
 @st.cache_data(ttl=86400)
 def search_pokemon_id_by_name(query_name):
-  query_name = query_name.strip()
+  query_name = query_name.strip().lower()
+
+  # 1. 영단어로 직접 검색 시도
   try:
     res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon-species/{query_name.lower()}",
-        timeout=2,
+        f"https://pokeapi.co/api/v2/pokemon-species/{query_name}", timeout=2
     )
     if res.status_code == 200:
       return res.json()["id"]
   except Exception:
     pass
 
-  for i in range(1, 1026):
-    name = get_pokemon_name_by_id(i)
-    if name == query_name:
-      return i
+  # 2. 한글 이름 매칭을 위한 목록 조회 (빠른 매칭을 위해 전체 species 리스트 대상 검색)
+  try:
+    list_res = requests.get(
+        "https://pokeapi.co/api/v2/pokemon-species?limit=1025", timeout=4
+    )
+    if list_res.status_code == 200:
+      results = list_res.json().get("results", [])
+      for idx, item in enumerate(results):
+        p_id = idx + 1
+        # 캐싱된 함수 활용 혹은 직접 조회
+        ko_name = get_pokemon_name_by_id(p_id)
+        if ko_name and query_name in ko_name.lower():
+          return p_id
+  except Exception:
+    pass
+
   return None
 
 
@@ -747,8 +758,8 @@ def get_pokemon_data(query):
     )
 
     base_form_data = {
-        "type": "기본",
-        "title": f"{ko_name} (기본)",
+        "type": "기본폼",
+        "title": f"{ko_name} (기본폼)",
         "image": img_url,
         "shiny_image": shiny_img_url,
         "types": ko_types,
@@ -946,10 +957,7 @@ elif st.session_state.current_page == "포켓몬 도감":
 
       form_tab_titles = []
       for f in data["forms"]:
-        if f["type"] == "기본":
-          form_tab_titles.append("기본 폼")
-        else:
-          form_tab_titles.append(f["type"])
+        form_tab_titles.append(f["type"])
 
       form_tabs = st.tabs(form_tab_titles)
 
