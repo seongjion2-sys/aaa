@@ -16,6 +16,9 @@ if "current_page" not in st.session_state:
 if "selected_gen" not in st.session_state:
   st.session_state.selected_gen = None
 
+if "search_history" not in st.session_state:
+  st.session_state.search_history = []
+
 
 # 세대별 범위 정의
 GENERATIONS = {
@@ -38,11 +41,26 @@ def go_to_page(page_name):
     st.session_state.selected_gen = None
 
 
+# 검색어 기록 추가 함수
+def add_search_history(query):
+  query = query.strip()
+  if query:
+    if query in st.session_state.search_history:
+      st.session_state.search_history.remove(query)
+    st.session_state.search_history.insert(0, query)
+    # 최대 10개까지만 유지
+    if len(st.session_state.search_history) > 10:
+      st.session_state.search_history.pop()
+
+
 # 검색어 업데이트 콜백
 def update_search():
-  st.session_state.search_query = st.session_state.user_input
+  query = st.session_state.user_input
+  st.session_state.search_query = query
   st.session_state.current_page = "포켓몬 도감"
   st.session_state.selected_gen = None
+  if query.strip():
+    add_search_history(query)
 
 
 # CSS 스타일 적용
@@ -840,6 +858,23 @@ st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
   go_to_page("Main")
 
+# 사이드바에 검색 기록 표시
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🕒 최근 검색 기록")
+if st.session_state.search_history:
+  if st.sidebar.button("기록 전체 삭제", use_container_width=True):
+    st.session_state.search_history = []
+    st.rerun()
+
+  for h_item in st.session_state.search_history:
+    if st.sidebar.button(f"🔍 {h_item}", key=f"side_hist_{h_item}", use_container_width=True):
+      st.session_state.search_query = h_item
+      st.session_state.selected_gen = None
+      go_to_page("포켓몬 도감")
+      st.rerun()
+else:
+  st.sidebar.write("최근 검색한 기록이 없습니다.")
+
 
 # ==================== 페이지 라우팅 ====================
 
@@ -918,6 +953,7 @@ if st.session_state.current_page == "Main":
       if st.button("이동하기", key=f"feat_btn_{idx}", use_container_width=True):
         st.session_state.search_query = p_name
         st.session_state.selected_gen = None
+        add_search_history(p_name)
         go_to_page("포켓몬 도감")
         st.rerun()
 
@@ -937,7 +973,18 @@ elif st.session_state.current_page == "포켓몬 도감":
       placeholder="포켓몬 이름 또는 도감 번호 입력...",
   )
 
-  # 검색어가 없고 선택된 세도 없으면 9개 세대 배너 표시
+  # 최근 검색 기록 칩 표시 영역
+  if st.session_state.search_history:
+    st.markdown("**최근 검색:**")
+    hist_cols = st.columns(min(len(st.session_state.search_history), 8))
+    for i, h_term in enumerate(st.session_state.search_history[:8]):
+      with hist_cols[i]:
+        if st.button(f"📌 {h_term}", key=f"chip_hist_{i}", use_container_width=True):
+          st.session_state.search_query = h_term
+          st.session_state.selected_gen = None
+          st.rerun()
+
+  # 검색어가 없고 선택된 세대도 없으면 9개 세대 배너 표시
   if not st.session_state.search_query.strip() and not st.session_state.selected_gen:
     st.markdown(
         "<h3 class='section-title'>📦 세대별 도감 선택</h3>", unsafe_allow_html=True
@@ -980,7 +1027,6 @@ elif st.session_state.current_page == "포켓몬 도감":
     st.markdown(f"<h3 class='section-title'>⚡ {g_name} 목록</h3>", unsafe_allow_html=True)
     st.write(f"No.{start} ~ No.{end} 포켓몬을 선택하세요.")
 
-    # 간이 목록 버튼 그리드 (예시로 3열 배치)
     poke_cols = st.columns(3)
     for p_id in range(start, end + 1):
       p_name = get_pokemon_name_by_id(p_id)
@@ -992,6 +1038,7 @@ elif st.session_state.current_page == "포켓몬 도감":
             use_container_width=True,
         ):
           st.session_state.search_query = str(p_id)
+          add_search_history(p_name)
           st.rerun()
 
   else:
@@ -1016,6 +1063,7 @@ elif st.session_state.current_page == "포켓몬 도감":
             use_container_width=True,
         ):
           st.session_state.search_query = str(prev_id)
+          add_search_history(prev_name)
           st.rerun()
 
       with btn_col2:
@@ -1024,6 +1072,7 @@ elif st.session_state.current_page == "포켓몬 도감":
             use_container_width=True,
         ):
           st.session_state.search_query = str(next_id)
+          add_search_history(next_name)
           st.rerun()
 
       st.markdown(
