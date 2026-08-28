@@ -718,26 +718,7 @@ st.text_input(
 
 if st.session_state.search_query:
   query_text = str(st.session_state.search_query).strip()
-
-  # 예상 시간 표시가 포함된 커스텀 프로그레스바 로딩 구현
-  progress_text = st.empty()
-  progress_text.markdown(
-      f"⚡ '{query_text}' 포켓몬 정보를 불러오는 중입니다... (예상 소요 시간:"
-      " 약 1~2초)"
-  )
-  progress_bar = st.progress(0)
-
-  for percent_complete in range(100):
-    time.sleep(0.005)
-    progress_bar.progress(percent_complete + 1)
-    if percent_complete == 50:
-      data = get_pokemon_data(query_text)
-
-  progress_bar.empty()
-  progress_text.empty()
-
-  if "data" not in locals() or data is None:
-    data = get_pokemon_data(query_text)
+  data = get_pokemon_data(query_text)
 
   if data:
     current_id = data["id"]
