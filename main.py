@@ -9,7 +9,7 @@ st.set_page_config(page_title="포켓몬 위키", page_icon="⚡", layout="wide"
 
 # Session State 초기화
 if "search_query" not in st.session_state:
-  st.session_state.search_query = "720"  # 기본값: No.720 (후파)
+  st.session_state.search_query = "484"  # 기본값: No.484 (펄기아)
 
 
 # 검색어 업데이트 콜백
@@ -97,33 +97,6 @@ st.markdown(
         font-weight: bold;
     }
 
-    /* 폼 체인지 카드 스타일 */
-    .form-card {
-        border: 2px solid #008275;
-        border-radius: 10px;
-        padding: 12px;
-        background-color: #1a1a1a;
-        margin-bottom: 15px;
-        text-align: center;
-    }
-    .form-card img {
-        width: 120px;
-        height: 120px;
-        object-fit: contain;
-        margin-bottom: 4px;
-    }
-    .form-title {
-        font-weight: bold;
-        font-size: 1.05rem;
-        color: #ffffff;
-        margin-bottom: 6px;
-    }
-    .form-desc {
-        font-size: 0.82rem;
-        color: #cccccc;
-        margin-top: 6px;
-    }
-
     /* 상성 표 스타일 */
     .type-table {
         width: 100%;
@@ -182,7 +155,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 종족치 & 타입 매핑
 STAT_NAME_MAP = {
     "hp": "체력(HP)",
     "attack": "공격",
@@ -497,7 +469,7 @@ def get_special_forms(species_data, base_ko_name):
       form_ko_title = f"메가{base_ko_name}"
       form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
     elif "-origin" in v_name:
-      form_type = "오리진폼"
+      form_type = "오리진 폼"
       form_ko_title = f"{base_ko_name} (오리진 폼)"
       form_desc = "본래의 진정한 모습을 드러낸 오리진 형태입니다."
     elif "-primal" in v_name:
@@ -509,11 +481,11 @@ def get_special_forms(species_data, base_ko_name):
       form_ko_title = f"거다이맥스 {base_ko_name}"
       form_desc = "특정 개체만이 거대해지는 거다이맥스 형태입니다."
     elif "unbound" in v_name:
-      form_type = "해방폼"
+      form_type = "해방된 폼"
       form_ko_title = f"{base_ko_name} (해방된 폼)"
       form_desc = "진짜 힘을 되찾아 거대해진 모습입니다."
     elif "confined" in v_name:
-      form_type = "매듭폼"
+      form_type = "매듭의 폼"
       form_ko_title = f"{base_ko_name} (매듭의 폼)"
       form_desc = "작은 링에 봉인되어 있는 평소의 모습입니다."
     elif not is_default:
@@ -845,43 +817,6 @@ if st.session_state.search_query:
           unsafe_allow_html=True,
       )
 
-      st.markdown(
-          "<h3 class='section-title'>6. 특수 폼 체인지 & 이로치</h3>",
-          unsafe_allow_html=True,
-      )
-
-      if data["special_forms"]:
-        form_cols = st.columns(min(len(data["special_forms"]), 3))
-        for idx, form in enumerate(data["special_forms"]):
-          with form_cols[idx % 3]:
-            type_chips = "".join([
-                f"<span class='type-chip bg-{rt}'>{t}</span>"
-                for t, rt in zip(
-                    form["types"],
-                    form.get("raw_types", ["" for _ in form["types"]]),
-                )
-            ])
-            st.markdown(
-                f"""
-                            <div class='form-card'>
-                                <div style='display:flex; justify-content:center; gap:5px;'>
-                                    <div>
-                                        <div style='font-size:0.75rem; color:#aaa;'>일반</div>
-                                        <img src='{form['image']}'>
-                                    </div>
-                                    <div>
-                                        <div style='font-size:0.75rem; color:#ffdf6d;'>이로치</div>
-                                        <img src='{form['shiny_image']}'>
-                                    </div>
-                                </div>
-                                <div class='form-title'>{form['title']}</div>
-                                <div>{type_chips}</div>
-                                <div class='form-desc'>{form['desc']}</div>
-                            </div>
-                            """,
-                unsafe_allow_html=True,
-            )
-
     with col2:
       st.markdown(
           f"<div class='infobox'><div"
@@ -889,14 +824,47 @@ if st.session_state.search_query:
           unsafe_allow_html=True,
       )
 
-      img_tab1, img_tab2 = st.tabs(["일반", "✨ 이로치"])
-      with img_tab1:
+      # 탭 동적 생성: 기본 일반/이로치 탭에 특수 폼이 있다면 탭으로 추가
+      form_tabs_labels = ["일반", "✨ 이로치"]
+      for form in data["special_forms"]:
+        form_tabs_labels.append(form["type"])
+
+      form_tabs = st.tabs(form_tabs_labels)
+
+      # 1. 일반 탭
+      with form_tabs[0]:
         st.image(data["image"], use_container_width=True)
-      with img_tab2:
+
+      # 2. 이로치 탭
+      with form_tabs[1]:
         if data["shiny_image"]:
           st.image(data["shiny_image"], use_container_width=True)
         else:
           st.write("이로치 이미지가 없습니다.")
+
+      # 3. 특수 폼 탭들
+      for idx, form in enumerate(data["special_forms"]):
+        with form_tabs[2 + idx]:
+          # 특수 폼 내부에서도 일반/이로치를 볼 수 있게 서브 탭 구성
+          sub_tab1, sub_tab2 = st.tabs(["일반", "✨ 이로치"])
+          with sub_tab1:
+            st.image(form["image"], use_container_width=True)
+          with sub_tab2:
+            if form["shiny_image"]:
+              st.image(form["shiny_image"], use_container_width=True)
+            else:
+              st.write("이로치 이미지가 없습니다.")
+
+          st.markdown(f"**{form['title']}**")
+          type_chips = "".join([
+              f"<span class='type-chip bg-{rt}'>{t}</span>"
+              for t, rt in zip(
+                  form["types"],
+                  form.get("raw_types", ["" for _ in form["types"]]),
+              )
+          ])
+          st.markdown(type_chips, unsafe_allow_html=True)
+          st.caption(form["desc"])
 
       st.table({
           "속성": [
