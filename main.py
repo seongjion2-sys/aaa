@@ -17,7 +17,7 @@ def update_search():
   st.session_state.search_query = st.session_state.user_input
 
 
-# CSS 스타일 적용
+# CSS 스타일 적용 (나무위키 스타일 테이블 & 타입 배경색 정의)
 st.markdown(
     """
     <style>
@@ -95,19 +95,59 @@ st.markdown(
         font-size: 1.05rem;
         font-weight: bold;
     }
-    .effectiveness-badge {
-        display: inline-block;
-        padding: 4px 8px;
-        margin: 3px;
-        border-radius: 6px;
-        font-size: 0.85rem;
+
+    /* 나무위키 상성 표 스타일 */
+    .type-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 0.9rem;
+        border: 1px solid #008275;
+    }
+    .type-table th {
+        background-color: #008275;
+        color: white;
+        padding: 6px 4px;
+        border: 1px solid #00665c;
         font-weight: bold;
     }
-    .eff-4x { background-color: #ff4d4d; color: white; }
-    .eff-2x { background-color: #ff944d; color: white; }
-    .eff-05x { background-color: #4da6ff; color: white; }
-    .eff-025x { background-color: #1a75ff; color: white; }
-    .eff-0x { background-color: #888888; color: white; }
+    .type-table td {
+        background-color: #1a1a1a;
+        padding: 10px 4px;
+        border: 1px solid #333;
+        vertical-align: top;
+    }
+    .type-chip {
+        display: inline-block;
+        padding: 3px 8px;
+        margin: 2px;
+        border-radius: 6px;
+        color: white;
+        font-weight: bold;
+        font-size: 0.82rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    /* 포켓몬 공식 타입별 고유 색상 */
+    .bg-normal { background-color: #A8A878; }
+    .bg-fire { background-color: #F08030; }
+    .bg-water { background-color: #6890F0; }
+    .bg-grass { background-color: #78C850; }
+    .bg-electric { background-color: #F8D030; color: #000 !important; }
+    .bg-ice { background-color: #98D8D8; color: #000 !important; }
+    .bg-fighting { background-color: #C03028; }
+    .bg-poison { background-color: #A040A0; }
+    .bg-ground { background-color: #E0C068; color: #000 !important; }
+    .bg-flying { background-color: #A890F0; }
+    .bg-psychic { background-color: #F85888; }
+    .bg-bug { background-color: #A8B820; }
+    .bg-rock { background-color: #B8A038; }
+    .bg-ghost { background-color: #70559B; }
+    .bg-dragon { background-color: #7038F8; }
+    .bg-dark { background-color: #705848; }
+    .bg-steel { background-color: #B8B8D0; color: #000 !important; }
+    .bg-fairy { background-color: #EE99AC; color: #000 !important; }
     </style>
 """,
     unsafe_allow_html=True,
@@ -144,12 +184,14 @@ TYPE_NAME_MAP = {
     "fairy": "페어리",
 }
 
+ALL_TYPES = list(TYPE_NAME_MAP.keys())
 
-# 상성 계산 함수
+
+# 방어 및 공격 상성 상세 계산 함수
 @st.cache_data(ttl=86400)
-def get_type_effectiveness(raw_types):
-  damage_relations = {t: 1.0 for t in TYPE_NAME_MAP.keys()}
-
+def calculate_type_effectiveness(raw_types):
+  # 1. 방어 상성 (상대가 나에게 주는 피해 배율)
+  defense_relations = {t: 1.0 for t in ALL_TYPES}
   for t_name in raw_types:
     try:
       res = requests.get(
@@ -158,21 +200,88 @@ def get_type_effectiveness(raw_types):
       if res.status_code == 200:
         rel = res.json()["damage_relations"]
         for d in rel["double_damage_from"]:
-          damage_relations[d["name"]] *= 2.0
+          defense_relations[d["name"]] *= 2.0
         for h in rel["half_damage_from"]:
-          damage_relations[h["name"]] *= 0.5
+          defense_relations[h["name"]] *= 0.5
         for n in rel["no_damage_from"]:
-          damage_relations[n["name"]] *= 0.0
+          defense_relations[n["name"]] *= 0.0
     except Exception:
       pass
 
-  # 배율별 분류
-  grouped = {4.0: [], 2.0: [], 0.5: [], 0.25: [], 0.0: []}
-  for t_name, mult in damage_relations.items():
-    if mult in grouped:
-      grouped[mult].append(TYPE_NAME_MAP.get(t_name, t_name))
+  def_grouped = {4.0: [], 2.0: [], 1.0: [], 0.5: [], 0.25: [], 0.0: []}
+  for t_name, mult in defense_relations.items():
+    if mult in def_grouped:
+      def_grouped[mult].append(t_name)
 
-  return grouped
+  # 2. 공격 상성 (내가 가진 자속 타입 기술로 상대에게 주는 최대 피해 배율)
+  attack_relations = {t: 0.0 for t in ALL_TYPES}
+  for t_name in raw_types:
+    try:
+      res = requests.get(
+          f"https://pokeapi.co/api/v2/type/{t_name}", timeout=3
+      )
+      if res.status_code == 200:
+        rel = res.json()["damage_relations"]
+        double_to = [x["name"] for x in rel["double_damage_to"]]
+        half_to = [x["name"] for x in rel["half_damage_to"]]
+        no_to = [x["name"] for x in rel["no_damage_to"]]
+
+        for target_t in ALL_TYPES:
+          mult = 1.0
+          if target_t in double_to:
+            mult = 2.0
+          elif target_t in half_to:
+            mult = 0.5
+          elif target_t in no_to:
+            mult = 0.0
+
+          attack_relations[target_t] = max(attack_relations[target_t], mult)
+    except Exception:
+      pass
+
+  atk_grouped = {2.0: [], 1.0: [], 0.5: [], 0.0: []}
+  for t_name, mult in attack_relations.items():
+    if mult in atk_grouped:
+      atk_grouped[mult].append(t_name)
+
+  return def_grouped, atk_grouped
+
+
+# 상성 HTML 표 생성 함수
+def render_type_table(grouped_data, is_defense=True):
+  # 방어 시 배율 목록 (4배~0배)
+  if is_defense:
+    multipliers = [4.0, 2.0, 1.0, 0.5, 0.25, 0.0]
+  else:  # 공격 시 배율 목록 (2배~0배)
+    multipliers = [2.0, 1.0, 0.5, 0.0]
+
+  active_mults = [m for m in multipliers if len(grouped_data.get(m, [])) > 0]
+
+  if not active_mults:
+    return "<p>상성 정보가 없습니다.</p>"
+
+  headers_html = "".join([
+      f"<th>{f'{m:g}' if m % 1 != 0 else int(m)}배</th>" for m in active_mults
+  ])
+
+  cells_html = ""
+  for m in active_mults:
+    chips = ""
+    for t_en in grouped_data[m]:
+      t_ko = TYPE_NAME_MAP.get(t_en, t_en)
+      chips += f"<span class='type-chip bg-{t_en}'>{t_ko}</span>"
+    cells_html += f"<td>{chips}</td>"
+
+  return f"""
+    <table class="type-table">
+        <thead>
+            <tr>{headers_html}</tr>
+        </thead>
+        <tbody>
+            <tr>{cells_html}</tr>
+        </tbody>
+    </table>
+    """
 
 
 # 구글 번역 함수
@@ -424,8 +533,10 @@ def get_pokemon_data(query):
     raw_types = [t["type"]["name"] for t in pokemon_data["types"]]
     ko_types = [TYPE_NAME_MAP.get(t, t) for t in raw_types]
 
-    # 타입 상성 계산
-    type_effectiveness = get_type_effectiveness(raw_types)
+    # 방어 상성 및 공격 상성 계산
+    def_effectiveness, atk_effectiveness = calculate_type_effectiveness(
+        raw_types
+    )
 
     stats_dict = {}
     total_stats = 0
@@ -476,7 +587,8 @@ def get_pokemon_data(query):
         "image": img_url,
         "description": ko_flavor,
         "types": ko_types,
-        "type_effectiveness": type_effectiveness,
+        "def_effectiveness": def_effectiveness,
+        "atk_effectiveness": atk_effectiveness,
         "stats": stats_dict,
         "total_stats": total_stats,
         "prev_evos": prev_evos_info,
@@ -500,7 +612,6 @@ st.text_input(
 if st.session_state.search_query:
   query_text = str(st.session_state.search_query).strip()
 
-  # 입력 형태에 따른 예상 대기 시간 메시지 분기
   if query_text.isdigit():
     loading_msg = (
         f"⚡ No.{query_text} 포켓몬 정보 조회 중... (예상 대기시간: 약 0.5초)"
@@ -640,51 +751,20 @@ if st.session_state.search_query:
       st.markdown(
           "<h3 class='section-title'>5. 타입 상성</h3>", unsafe_allow_html=True
       )
-      eff = data["type_effectiveness"]
 
-      has_eff = False
-      if eff[4.0]:
-        has_eff = True
-        badges = "".join([
-            f"<span class='effectiveness-badge eff-4x'>{t}</span>"
-            for t in eff[4.0]
-        ])
-        st.markdown(f"**4배 상성 (치명적 약점):** {badges}", unsafe_allow_html=True)
+      # 5.1 공격 상성
+      st.write("##### **[공격 상성]** (자신의 타입 기술로 공격 시 배율)")
+      st.markdown(
+          render_type_table(data["atk_effectiveness"], is_defense=False),
+          unsafe_allow_html=True,
+      )
 
-      if eff[2.0]:
-        has_eff = True
-        badges = "".join([
-            f"<span class='effectiveness-badge eff-2x'>{t}</span>"
-            for t in eff[2.0]
-        ])
-        st.markdown(f"**2배 상성 (약점):** {badges}", unsafe_allow_html=True)
-
-      if eff[0.5]:
-        has_eff = True
-        badges = "".join([
-            f"<span class='effectiveness-badge eff-05x'>{t}</span>"
-            for t in eff[0.5]
-        ])
-        st.markdown(f"**0.5배 상성 (반감):** {badges}", unsafe_allow_html=True)
-
-      if eff[0.25]:
-        has_eff = True
-        badges = "".join([
-            f"<span class='effectiveness-badge eff-025x'>{t}</span>"
-            for t in eff[0.25]
-        ])
-        st.markdown(f"**0.25배 상성 (강한 반감):** {badges}", unsafe_allow_html=True)
-
-      if eff[0.0]:
-        has_eff = True
-        badges = "".join([
-            f"<span class='effectiveness-badge eff-0x'>{t}</span>"
-            for t in eff[0.0]
-        ])
-        st.markdown(f"**0배 상성 (무효):** {badges}", unsafe_allow_html=True)
-
-      if not has_eff:
-        st.write("특별한 약점이나 반감이 없는 보통 상성입니다.")
+      # 5.2 방어 상성
+      st.write("##### **[방어 상성]** (상대 타입 기술로 공격받을 때 배율)")
+      st.markdown(
+          render_type_table(data["def_effectiveness"], is_defense=True),
+          unsafe_allow_html=True,
+      )
 
     with col2:
       st.markdown(
