@@ -453,7 +453,7 @@ def get_special_forms(species_data, base_ko_name):
     if is_default:
       continue
 
-    # 일반 변형 폼(폼 체인지 슬롯에 해당하는 항목들)을 완전히 필터링하여 제외
+    # 메가진화 또는 유대진화(ash) 형태만 남기고 일반 변형 폼은 모두 제외
     if "-mega" not in v_name and "ash" not in v_name:
       continue
 
@@ -473,26 +473,6 @@ def get_special_forms(species_data, base_ko_name):
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name}"
       form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
-    elif "-origin" in v_name:
-      form_type = "오리진 폼"
-      form_ko_title = f"{base_ko_name} (오리진 폼)"
-      form_desc = "본래의 진정한 모습을 드러낸 오리진 형태입니다."
-    elif "-primal" in v_name:
-      form_type = "원시회귀"
-      form_ko_title = f"원시{base_ko_name}"
-      form_desc = "고대의 자연 에너지를 되찾아 원시회귀한 모습입니다."
-    elif "-gmax" in v_name:
-      form_type = "거다이맥스"
-      form_ko_title = f"거다이맥스 {base_ko_name}"
-      form_desc = "특정 개체만이 거대해지는 거다이맥스 형태입니다."
-    elif "unbound" in v_name:
-      form_type = "해방된 폼"
-      form_ko_title = f"{base_ko_name} (해방된 폼)"
-      form_desc = "진짜 힘을 되찾아 거대해진 모습입니다."
-    elif "eternal" in v_name:
-      form_type = "영원의 꽃"
-      form_ko_title = f"{base_ko_name} (영원의 꽃)"
-      form_desc = "특별한 꽃을 품은 영원의 꽃 형태입니다."
     elif "ash" in v_name:
       form_type = "유대진화"
       form_ko_title = f"{base_ko_name} (지우개굴닌자)"
@@ -657,7 +637,7 @@ def get_pokemon_data(query):
     )
     shiny_img_url = (
         pokemon_data["sprites"]["other"]["official-artwork"]["front_shiny"]
-        or pokemon_data["sprites"]["front_shiny"]
+        or pokemon_data["sprites"]["shiny_default"]
     )
 
     base_form_data = {
@@ -831,7 +811,7 @@ if st.session_state.search_query:
           st.write("##### **[방어 상성]** (상대 타입 기술로 공격받을 때 배율)")
           st.markdown(
               render_type_table(form_info["def_effectiveness"], is_defense=True),
-              unsafe_allow_html=T,
+              unsafe_allow_html=True,
           )
 
         with col2:
