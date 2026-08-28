@@ -558,18 +558,18 @@ def get_special_forms(species_data, base_ko_name, species_name):
       form_type = "히스이폼"
       form_ko_title = f"{base_ko_name} (히스이의 모습)"
       form_desc = "과거 히스이지방의 대자연 속에서 살아오며 변화한 모습입니다."
-    elif "-paldea-combat" in v_name:
-      form_type = "팔데아폼"
-      form_ko_title = f"{base_ko_name} (팔데아의 모습·컴뱃 블레이즈)"
+    elif "-combat" in v_name:
+      form_type = "컴뱃종"
+      form_ko_title = f"{base_ko_name} (컴뱃종)"
       form_desc = "팔데아지방의 환경에 적응한 컴뱃 품종의 모습입니다."
-    elif "-paldea-blaze" in v_name:
-      form_type = "팔데아폼"
-      form_ko_title = f"{base_ko_name} (팔데아의 모습·블레이즈 Breed)"
+    elif "-blaze" in v_name:
+      form_type = "블레이즈종"
+      form_ko_title = f"{base_ko_name} (블레이즈종)"
       form_desc = "팔데아지방의 환경에 적응한 블레이즈 품종의 모습입니다."
-    elif "-paldea-aqua" in v_name:
-      form_type = "팔데아폼"
-      form_ko_title = f"{base_ko_name} (팔데아의 모습·아쿠아 Breed)"
-      form_desc = "팔데아지방의 환경에 적응한 아쿠아 품종의 모습입니다."
+    elif "-aqua" in v_name:
+      form_type = "워터종"
+      form_ko_title = f"{base_ko_name} (워터종)"
+      form_desc = "팔데아지방의 환경에 적응한 워터 품종의 모습입니다."
     elif "-mega-x" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} X"
