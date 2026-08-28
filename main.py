@@ -95,6 +95,19 @@ st.markdown(
         font-size: 1.05rem;
         font-weight: bold;
     }
+    .effectiveness-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 3px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: bold;
+    }
+    .eff-4x { background-color: #ff4d4d; color: white; }
+    .eff-2x { background-color: #ff944d; color: white; }
+    .eff-05x { background-color: #4da6ff; color: white; }
+    .eff-025x { background-color: #1a75ff; color: white; }
+    .eff-0x { background-color: #888888; color: white; }
     </style>
 """,
     unsafe_allow_html=True,
@@ -130,6 +143,36 @@ TYPE_NAME_MAP = {
     "steel": "강철",
     "fairy": "페어리",
 }
+
+
+# 상성 계산 함수
+@st.cache_data(ttl=86400)
+def get_type_effectiveness(raw_types):
+  damage_relations = {t: 1.0 for t in TYPE_NAME_MAP.keys()}
+
+  for t_name in raw_types:
+    try:
+      res = requests.get(
+          f"https://pokeapi.co/api/v2/type/{t_name}", timeout=3
+      )
+      if res.status_code == 200:
+        rel = res.json()["damage_relations"]
+        for d in rel["double_damage_from"]:
+          damage_relations[d["name"]] *= 2.0
+        for h in rel["half_damage_from"]:
+          damage_relations[h["name"]] *= 0.5
+        for n in rel["no_damage_from"]:
+          damage_relations[n["name"]] *= 0.0
+    except Exception:
+      pass
+
+  # 배율별 분류
+  grouped = {4.0: [], 2.0: [], 0.5: [], 0.25: [], 0.0: []}
+  for t_name, mult in damage_relations.items():
+    if mult in grouped:
+      grouped[mult].append(TYPE_NAME_MAP.get(t_name, t_name))
+
+  return grouped
 
 
 # 구글 번역 함수
@@ -377,10 +420,12 @@ def get_pokemon_data(query):
     )
 
     capture_rate = species_data.get("capture_rate", "정보 없음")
-    ko_types = [
-        TYPE_NAME_MAP.get(t["type"]["name"], t["type"]["name"])
-        for t in pokemon_data["types"]
-    ]
+
+    raw_types = [t["type"]["name"] for t in pokemon_data["types"]]
+    ko_types = [TYPE_NAME_MAP.get(t, t) for t in raw_types]
+
+    # 타입 상성 계산
+    type_effectiveness = get_type_effectiveness(raw_types)
 
     stats_dict = {}
     total_stats = 0
@@ -431,6 +476,7 @@ def get_pokemon_data(query):
         "image": img_url,
         "description": ko_flavor,
         "types": ko_types,
+        "type_effectiveness": type_effectiveness,
         "stats": stats_dict,
         "total_stats": total_stats,
         "prev_evos": prev_evos_info,
@@ -589,6 +635,56 @@ if st.session_state.search_query:
                             """,
                   unsafe_allow_html=True,
               )
+
+      # '5. 타입 상성' 섹션
+      st.markdown(
+          "<h3 class='section-title'>5. 타입 상성</h3>", unsafe_allow_html=True
+      )
+      eff = data["type_effectiveness"]
+
+      has_eff = False
+      if eff[4.0]:
+        has_eff = True
+        badges = "".join([
+            f"<span class='effectiveness-badge eff-4x'>{t}</span>"
+            for t in eff[4.0]
+        ])
+        st.markdown(f"**4배 상성 (치명적 약점):** {badges}", unsafe_allow_html=True)
+
+      if eff[2.0]:
+        has_eff = True
+        badges = "".join([
+            f"<span class='effectiveness-badge eff-2x'>{t}</span>"
+            for t in eff[2.0]
+        ])
+        st.markdown(f"**2배 상성 (약점):** {badges}", unsafe_allow_html=True)
+
+      if eff[0.5]:
+        has_eff = True
+        badges = "".join([
+            f"<span class='effectiveness-badge eff-05x'>{t}</span>"
+            for t in eff[0.5]
+        ])
+        st.markdown(f"**0.5배 상성 (반감):** {badges}", unsafe_allow_html=True)
+
+      if eff[0.25]:
+        has_eff = True
+        badges = "".join([
+            f"<span class='effectiveness-badge eff-025x'>{t}</span>"
+            for t in eff[0.25]
+        ])
+        st.markdown(f"**0.25배 상성 (강한 반감):** {badges}", unsafe_allow_html=True)
+
+      if eff[0.0]:
+        has_eff = True
+        badges = "".join([
+            f"<span class='effectiveness-badge eff-0x'>{t}</span>"
+            for t in eff[0.0]
+        ])
+        st.markdown(f"**0배 상성 (무효):** {badges}", unsafe_allow_html=True)
+
+      if not has_eff:
+        st.write("특별한 약점이나 반감이 없는 보통 상성입니다.")
 
     with col2:
       st.markdown(
