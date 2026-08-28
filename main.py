@@ -34,6 +34,13 @@ st.markdown(
     :root {
         --wiki-main: #008275;
     }
+    /* 검색창 크기 및 스타일 확대 */
+    .stTextInput input {
+        font-size: 1.2rem !important;
+        padding: 14px 18px !important;
+        border-radius: 10px !important;
+        border: 2px solid var(--wiki-main) !important;
+    }
     .main-title {
         color: var(--wiki-main);
         font-weight: bold;
@@ -706,7 +713,6 @@ st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
   go_to_page("메인")
 if st.sidebar.button("📖 포켓몬 도감", use_container_width=True):
-  # 포켓몬 도감 버튼을 누를 때 검색어를 비워 빈 화면 상태로 이동
   st.session_state.search_query = ""
   go_to_page("포켓몬 도감")
 if st.sidebar.button("👤 인물 도감", use_container_width=True):
@@ -788,14 +794,18 @@ if st.session_state.current_page == "메인":
 elif st.session_state.current_page == "포켓몬 도감":
   st.title("📖 포켓몬 도감")
 
+  st.write(
+      "**포켓몬 이름 또는 도감 번호를 입력하세요 (예: 개굴닌자, 리자몽, 뮤츠)**"
+  )
   st.text_input(
-      "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 개굴닌자, 리자몽, 뮤츠)",
+      "포켓몬 검색",
       value=st.session_state.search_query,
       key="user_input",
       on_change=update_search,
+      label_visibility="collapsed",
+      placeholder="포켓몬 이름 또는 도감 번호 입력...",
   )
 
-  # 검색어가 없을 때 빈 화면과 안내 문구 출력
   if not st.session_state.search_query.strip():
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown(
