@@ -9,7 +9,7 @@ st.set_page_config(page_title="포켓몬 위키", page_icon="⚡", layout="wide"
 
 # Session State 초기화
 if "search_query" not in st.session_state:
-  st.session_state.search_query = "658"  # 기본값: No.658 (개굴닌자)
+  st.session_state.search_query = "720"  # 기본값: No.720 (후파)
 
 
 # 검색어 업데이트 콜백
@@ -399,7 +399,7 @@ def find_evolution_neighbors(chain, target_species_name):
 def generate_hexagon_svg(stats):
   keys = ["체력(HP)", "공격", "방어", "특수공격", "특수방어", "스피드"]
   vals = [stats.get(k, 0) for k in keys]
-  max_val = 160.0
+  max_val = 180.0
   cx, cy, r = 150, 150, 100
 
   grid_lines = ""
@@ -508,13 +508,13 @@ def get_special_forms(species_data, base_ko_name):
       form_type = "거다이맥스"
       form_ko_title = f"거다이맥스 {base_ko_name}"
       form_desc = "특정 개체만이 거대해지는 거다이맥스 형태입니다."
-    elif "unbound" in v_name or "hoopa-unbound" in v_name:
+    elif "unbound" in v_name:
       form_type = "해방폼"
-      form_ko_title = f"후파 (해방된 폼)"
-      form_desc = "진짜 힘을 되찾아 거대해진 후파의 모습입니다."
+      form_ko_title = f"{base_ko_name} (해방된 폼)"
+      form_desc = "진짜 힘을 되찾아 거대해진 모습입니다."
     elif "confined" in v_name:
       form_type = "매듭폼"
-      form_ko_title = f"후파 (매듭의 폼)"
+      form_ko_title = f"{base_ko_name} (매듭의 폼)"
       form_desc = "작은 링에 봉인되어 있는 평소의 모습입니다."
     elif not is_default:
       form_type = "폼 체인지"
