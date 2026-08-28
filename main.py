@@ -9,7 +9,7 @@ st.set_page_config(page_title="포켓몬 위키", page_icon="⚡", layout="wide"
 
 # Session State 초기화
 if "search_query" not in st.session_state:
-  st.session_state.search_query = "5"  # 기본값: No.5 (리자드)
+  st.session_state.search_query = "658"  # 기본값: No.658 (개굴닌자)
 
 
 # 검색어 업데이트 콜백
@@ -17,7 +17,7 @@ def update_search():
   st.session_state.search_query = st.session_state.user_input
 
 
-# CSS 스타일 적용 (나무위키 스타일 테이블 & 타입 배경색 정의)
+# CSS 스타일 적용 (나무위키 스타일 테이블, 카드 & 타입 배경색 정의)
 st.markdown(
     """
     <style>
@@ -94,6 +94,33 @@ st.markdown(
     .evo-name {
         font-size: 1.05rem;
         font-weight: bold;
+    }
+
+    /* 폼 체인지 카드 스타일 */
+    .form-card {
+        border: 2px solid #008275;
+        border-radius: 10px;
+        padding: 12px;
+        background-color: #1a1a1a;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .form-card img {
+        width: 140px;
+        height: 140px;
+        object-fit: contain;
+        margin-bottom: 8px;
+    }
+    .form-title {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #ffffff;
+        margin-bottom: 6px;
+    }
+    .form-desc {
+        font-size: 0.85rem;
+        color: #cccccc;
+        margin-top: 6px;
     }
 
     /* 나무위키 상성 표 스타일 */
@@ -190,7 +217,7 @@ ALL_TYPES = list(TYPE_NAME_MAP.keys())
 # 방어 및 공격 상성 상세 계산 함수
 @st.cache_data(ttl=86400)
 def calculate_type_effectiveness(raw_types):
-  # 1. 방어 상성 (상대가 나에게 주는 피해 배율)
+  # 1. 방어 상성
   defense_relations = {t: 1.0 for t in ALL_TYPES}
   for t_name in raw_types:
     try:
@@ -213,7 +240,7 @@ def calculate_type_effectiveness(raw_types):
     if mult in def_grouped:
       def_grouped[mult].append(t_name)
 
-  # 2. 공격 상성 (내가 가진 자속 타입 기술로 상대에게 주는 최대 피해 배율)
+  # 2. 공격 상성
   attack_relations = {t: 0.0 for t in ALL_TYPES}
   for t_name in raw_types:
     try:
@@ -249,12 +276,9 @@ def calculate_type_effectiveness(raw_types):
 
 # 상성 HTML 표 생성 함수
 def render_type_table(grouped_data, is_defense=True):
-  # 방어 시 배율 목록 (4배~0배)
-  if is_defense:
-    multipliers = [4.0, 2.0, 1.0, 0.5, 0.25, 0.0]
-  else:  # 공격 시 배율 목록 (2배~0배)
-    multipliers = [2.0, 1.0, 0.5, 0.0]
-
+  multipliers = (
+      [4.0, 2.0, 1.0, 0.5, 0.25, 0.0] if is_defense else [2.0, 1.0, 0.5, 0.0]
+  )
   active_mults = [m for m in multipliers if len(grouped_data.get(m, [])) > 0]
 
   if not active_mults:
@@ -298,7 +322,7 @@ def translate_to_ko(text):
   return text
 
 
-# ID로 포켓몬 한글 이름 가져오는 함수 (캐싱 적용)
+# ID로 포켓몬 한글 이름 가져오는 함수
 @st.cache_data(ttl=86400)
 def get_pokemon_name_by_id(pokemon_id):
   try:
@@ -353,8 +377,7 @@ def get_pokemon_info_from_species_url(url):
 
 # 진화 트리를 탐색하여 이전/다음 진화체 찾기
 def find_evolution_neighbors(chain, target_species_name):
-  prev_evos = []
-  next_evos = []
+  prev_evos, next_evos = [], []
 
   def traverse(node, current_path):
     if node["species"]["name"] == target_species_name:
@@ -378,7 +401,6 @@ def generate_hexagon_svg(stats):
   keys = ["체력(HP)", "공격", "방어", "특수공격", "특수방어", "스피드"]
   vals = [stats.get(k, 0) for k in keys]
   max_val = 160.0
-
   cx, cy, r = 150, 150, 100
 
   grid_lines = ""
@@ -434,12 +456,105 @@ def generate_hexagon_svg(stats):
     """
 
 
-# 한국어 이름 -> ID 검색 (캐싱)
+# 특수 폼 체인지 목록을 가져오는 함수 (메가진화, 거다이맥스, 지우개굴닌자, 테라스탈)
+@st.cache_data(ttl=86400)
+def get_special_forms(species_data, base_ko_name):
+  special_forms = []
+  varieties = species_data.get("varieties", [])
+
+  for v in varieties:
+    is_default = v.get("is_default", False)
+    v_name = v["pokemon"]["name"]
+
+    # 기본 폼 제외
+    if is_default and "-mega" not in v_name:
+      continue
+
+    # 메가진화, 거다이맥스, 지우개굴닌자 등 특수 폼 감지
+    form_type = ""
+    form_ko_title = ""
+    form_desc = ""
+
+    if "-mega-x" in v_name:
+      form_type = "메가진화"
+      form_ko_title = f"메가{base_ko_name} X"
+      form_desc = (
+          "메가스톤을 이용하여 배틀 중에 한해서 일시적으로 한계를 넘어선"
+          " 진화를 이룹니다."
+      )
+    elif "-mega-y" in v_name:
+      form_type = "메가진화"
+      form_ko_title = f"메가{base_ko_name} Y"
+      form_desc = (
+          "메가스톤을 이용하여 배틀 중에 한해서 일시적으로 한계를 넘어선"
+          " 진화를 이룹니다."
+      )
+    elif "-mega" in v_name:
+      form_type = "메가진화"
+      form_ko_title = f"메가{base_ko_name}"
+      form_desc = (
+          "메가스톤을 이용하여 배틀 중에 한해서 일시적으로 한계를 넘어선"
+          " 진화를 이룹니다."
+      )
+    elif "-gmax" in v_name:
+      form_type = "거다이맥스"
+      form_ko_title = f"거다이맥스 {base_ko_name}"
+      form_desc = (
+          "가라르지방의 다이맥스 현상 중 특정 개체만이 거대해지며 고유의"
+          " 외형과 전용 다이맥스 기술을 사용합니다."
+      )
+    elif "greninja-ash" in v_name or "greninja-bond" in v_name:
+      form_type = "유대진화"
+      form_ko_title = "지우개굴닌자 (Ash-Greninja)"
+      form_desc = (
+          "지우와의 깊은 유대감으로 발동하는 유대변화 형태. 개굴닌자의 머리와"
+          " 등 뒤에 거대한 물창이 생겨납니다."
+      )
+
+    if form_type:
+      try:
+        p_res = requests.get(v["pokemon"]["url"], timeout=3)
+        if p_res.status_code == 200:
+          p_data = p_res.json()
+          img_url = (
+              p_data["sprites"]["other"]["official-artwork"]["front_default"]
+              or p_data["sprites"]["front_default"]
+          )
+          types_raw = [t["type"]["name"] for t in p_data["types"]]
+          types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
+
+          special_forms.append({
+              "type": form_type,
+              "title": form_ko_title,
+              "image": img_url,
+              "types": types_ko,
+              "raw_types": types_raw,
+              "desc": form_desc,
+          })
+      except Exception:
+        pass
+
+  # 기본 테라스탈 형태 정보 추가 (9세대 테라스탈 공통 정보)
+  terastal_img = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tera-orb.png"
+  special_forms.append({
+      "type": "테라스탈",
+      "title": f"테라스탈 {base_ko_name}",
+      "image": terastal_img,
+      "types": ["타입 변경 가능"],
+      "raw_types": [],
+      "desc": (
+          "팔데아지방의 현상으로, 테라스탈주얼이 발광하며 기술의 타입을"
+          " 강화하거나 포켓몬의 타입을 변환시킵니다."
+      ),
+  })
+
+  return special_forms
+
+
+# 한국어 이름 -> ID 검색
 @st.cache_data(ttl=86400)
 def search_pokemon_id_by_name(query_name):
   query_name = query_name.strip()
-
-  # 1. 영문명 시도
   try:
     res = requests.get(
         f"https://pokeapi.co/api/v2/pokemon-species/{query_name.lower()}",
@@ -450,12 +565,10 @@ def search_pokemon_id_by_name(query_name):
   except Exception:
     pass
 
-  # 2. 전국도감 범위 내 한글 검색
   for i in range(1, 1026):
     name = get_pokemon_name_by_id(i)
     if name == query_name:
       return i
-
   return None
 
 
@@ -463,12 +576,9 @@ def search_pokemon_id_by_name(query_name):
 @st.cache_data
 def get_pokemon_data(query):
   query = str(query).strip()
-  target_id = None
-
-  if query.isdigit():
-    target_id = int(query)
-  else:
-    target_id = search_pokemon_id_by_name(query)
+  target_id = (
+      int(query) if query.isdigit() else search_pokemon_id_by_name(query)
+  )
 
   if not target_id:
     return None
@@ -486,7 +596,6 @@ def get_pokemon_data(query):
     )
     species_data = species_res.json()
 
-    # 한글 이름
     ko_name = next(
         (
             n["name"]
@@ -510,11 +619,13 @@ def get_pokemon_data(query):
           for f in species_data["flavor_text_entries"]
           if f["language"]["name"] == "en"
       ]
-      if en_flavor_list:
-        raw_en = en_flavor_list[-1].replace("\n", " ").replace("\f", " ")
-        ko_flavor = translate_to_ko(raw_en)
-      else:
-        ko_flavor = "도감 설명이 존재하지 않습니다."
+      ko_flavor = (
+          translate_to_ko(
+              en_flavor_list[-1].replace("\n", " ").replace("\f", " ")
+          )
+          if en_flavor_list
+          else "도감 설명이 존재하지 않습니다."
+      )
 
     ko_genus = next(
         (
@@ -527,13 +638,11 @@ def get_pokemon_data(query):
     gen_roman = (
         species_data["generation"]["name"].replace("generation-", "").upper()
     )
-
     capture_rate = species_data.get("capture_rate", "정보 없음")
 
     raw_types = [t["type"]["name"] for t in pokemon_data["types"]]
     ko_types = [TYPE_NAME_MAP.get(t, t) for t in raw_types]
 
-    # 방어 상성 및 공격 상성 계산
     def_effectiveness, atk_effectiveness = calculate_type_effectiveness(
         raw_types
     )
@@ -546,28 +655,26 @@ def get_pokemon_data(query):
       stats_dict[s_name] = s_val
       total_stats += s_val
 
-    # 진화 상세 정보
-    prev_evos_info = []
-    next_evos_info = []
-
+    # 진화 정보
+    prev_evos_info, next_evos_info = [], []
     evo_url = species_data.get("evolution_chain", {}).get("url")
     if evo_url:
       evo_res = requests.get(evo_url, timeout=3)
       if evo_res.status_code == 200:
-        evo_chain = evo_res.json()
         raw_prev, raw_next = find_evolution_neighbors(
-            evo_chain, species_data["name"]
+            evo_res.json(), species_data["name"]
         )
-
         for p in raw_prev:
           info = get_pokemon_info_from_species_url(p["url"])
           if info:
             prev_evos_info.append(info)
-
         for n in raw_next:
           info = get_pokemon_info_from_species_url(n["url"])
           if info:
             next_evos_info.append(info)
+
+    # 특수 폼 체인지 정보 가져오기
+    special_forms = get_special_forms(species_data, ko_name)
 
     img_url = (
         pokemon_data["sprites"]["other"]["official-artwork"]["front_default"]
@@ -593,6 +700,7 @@ def get_pokemon_data(query):
         "total_stats": total_stats,
         "prev_evos": prev_evos_info,
         "next_evos": next_evos_info,
+        "special_forms": special_forms,
     }
   except Exception:
     return None
@@ -601,9 +709,8 @@ def get_pokemon_data(query):
 # 메인 화면 UI
 st.title("⚡ 포켓몬 나무위키")
 
-# 검색 입력창
 st.text_input(
-    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 피카츄, 5, Pikachu)",
+    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 개굴닌자, 리자몽, 658, Pikachu)",
     value=st.session_state.search_query,
     key="user_input",
     on_change=update_search,
@@ -612,51 +719,31 @@ st.text_input(
 if st.session_state.search_query:
   query_text = str(st.session_state.search_query).strip()
 
-  if query_text.isdigit():
-    loading_msg = (
-        f"⚡ No.{query_text} 포켓몬 정보 조회 중... (예상 대기시간: 약 0.5초)"
-    )
-  elif query_text.isascii():
-    loading_msg = (
-        f"⚡ '{query_text}' 영문 정보 조회 중... (예상 대기시간: 약 0.5초)"
-    )
-  else:
-    loading_msg = (
-        f"🔍 '{query_text}' 한글 포켓몬 검색 중... (예상 대기시간: 최초 1~3초,"
-        " 재검색 시 즉시)"
-    )
-
-  with st.spinner(loading_msg):
+  with st.spinner("⚡ 포켓몬 상세 정보 불러오는 중..."):
     data = get_pokemon_data(query_text)
 
   if data:
     current_id = data["id"]
-    prev_id = max(1, current_id - 1)
-    next_id = min(1025, current_id + 1)
-
-    # 이전 / 다음 포켓몬 이름 불러오기
+    prev_id, next_id = max(1, current_id - 1), min(1025, current_id + 1)
     prev_name = get_pokemon_name_by_id(prev_id) if current_id > 1 else ""
     next_name = get_pokemon_name_by_id(next_id) if current_id < 1025 else ""
 
-    # 이전 / 다음 포켓몬 버튼 이동 제어
     btn_col1, btn_col2, _ = st.columns([1, 1, 2])
     with btn_col1:
-      if current_id > 1:
-        if st.button(
-            f"◀ 이전: {prev_name} (No.{str(prev_id).zfill(4)})",
-            use_container_width=True,
-        ):
-          st.session_state.search_query = str(prev_id)
-          st.rerun()
+      if current_id > 1 and st.button(
+          f"◀ 이전: {prev_name} (No.{str(prev_id).zfill(4)})",
+          use_container_width=True,
+      ):
+        st.session_state.search_query = str(prev_id)
+        st.rerun()
 
     with btn_col2:
-      if current_id < 1025:
-        if st.button(
-            f"다음: {next_name} (No.{str(next_id).zfill(4)}) ▶",
-            use_container_width=True,
-        ):
-          st.session_state.search_query = str(next_id)
-          st.rerun()
+      if current_id < 1025 and st.button(
+          f"다음: {next_name} (No.{str(next_id).zfill(4)}) ▶",
+          use_container_width=True,
+      ):
+        st.session_state.search_query = str(next_id)
+        st.rerun()
 
     type_badges_html = "".join(
         [f"<span class='type-badge'>{t}</span>" for t in data["types"]]
@@ -697,82 +784,93 @@ if st.session_state.search_query:
       st.markdown(generate_hexagon_svg(data["stats"]), unsafe_allow_html=True)
 
       stat_cols = st.columns(3)
-      idx = 0
-      for stat_name, stat_val in data["stats"].items():
+      for idx, (stat_name, stat_val) in enumerate(data["stats"].items()):
         with stat_cols[idx % 3]:
           st.metric(label=stat_name, value=stat_val)
-        idx += 1
 
       st.write(f"**종족치 총합:** `{data['total_stats']}`")
 
-      # '4. 진화' 섹션
+      # 4. 진화
       if data["prev_evos"] or data["next_evos"]:
         st.markdown(
             "<h3 class='section-title'>4. 진화</h3>", unsafe_allow_html=True
         )
-
         if data["prev_evos"]:
           st.write("**이전 진화 형태**")
           cols = st.columns(min(len(data["prev_evos"]), 3))
           for i, evo in enumerate(data["prev_evos"]):
             with cols[i % 3]:
               st.markdown(
-                  f"""
-                                <div class='evo-card'>
-                                    <img src='{evo['image']}'>
-                                    <div class='evo-info'>
-                                        <div class='evo-id'>{evo['formatted_id']}</div>
-                                        <div class='evo-name'>{evo['name']}</div>
-                                    </div>
-                                </div>
-                            """,
+                  f"<div class='evo-card'><img"
+                  f" src='{evo['image']}'><div"
+                  " class='evo-info'><div"
+                  f" class='evo-id'>{evo['formatted_id']}</div><div"
+                  f" class='evo-name'>{evo['name']}</div></div></div>",
                   unsafe_allow_html=True,
               )
-
         if data["next_evos"]:
           st.write("**다음 진화 형태**")
           cols = st.columns(min(len(data["next_evos"]), 3))
           for i, evo in enumerate(data["next_evos"]):
             with cols[i % 3]:
               st.markdown(
-                  f"""
-                                <div class='evo-card'>
-                                    <img src='{evo['image']}'>
-                                    <div class='evo-info'>
-                                        <div class='evo-id'>{evo['formatted_id']}</div>
-                                        <div class='evo-name'>{evo['name']}</div>
-                                    </div>
-                                </div>
-                            """,
+                  f"<div class='evo-card'><img"
+                  f" src='{evo['image']}'><div"
+                  " class='evo-info'><div"
+                  f" class='evo-id'>{evo['formatted_id']}</div><div"
+                  f" class='evo-name'>{evo['name']}</div></div></div>",
                   unsafe_allow_html=True,
               )
 
-      # '5. 타입 상성' 섹션
+      # 5. 타입 상성
       st.markdown(
           "<h3 class='section-title'>5. 타입 상성</h3>", unsafe_allow_html=True
       )
-
-      # 5.1 공격 상성
       st.write("##### **[공격 상성]** (자신의 타입 기술로 공격 시 배율)")
       st.markdown(
           render_type_table(data["atk_effectiveness"], is_defense=False),
           unsafe_allow_html=True,
       )
 
-      # 5.2 방어 상성
       st.write("##### **[방어 상성]** (상대 타입 기술로 공격받을 때 배율)")
       st.markdown(
           render_type_table(data["def_effectiveness"], is_defense=True),
           unsafe_allow_html=True,
       )
 
+      # 6. 특수 폼 체인지 & 변형
+      st.markdown(
+          "<h3 class='section-title'>6. 특수 폼 체인지 & 변형</h3>",
+          unsafe_allow_html=True,
+      )
+
+      if data["special_forms"]:
+        form_cols = st.columns(min(len(data["special_forms"]), 3))
+        for idx, form in enumerate(data["special_forms"]):
+          with form_cols[idx % 3]:
+            type_chips = "".join([
+                f"<span class='type-chip bg-{rt}'>{t}</span>"
+                for t, rt in zip(
+                    form["types"],
+                    form.get("raw_types", ["" for _ in form["types"]]),
+                )
+            ])
+            st.markdown(
+                f"""
+                            <div class='form-card'>
+                                <img src='{form['image']}'>
+                                <div class='form-title'>{form['title']}</div>
+                                <div>{type_chips}</div>
+                                <div class='form-desc'>{form['desc']}</div>
+                            </div>
+                            """,
+                unsafe_allow_html=True,
+            )
+
     with col2:
       st.markdown(
-          f"""
-                <div class='infobox'>
-                    <div class='infobox-title'>{data['name']}</div>
-                </div>
-            """,
+          f"<div class='infobox'><div"
+          f" class='infobox-title'>{data['name']}</div></div>",
           unsafe_allow_html=True,
       )
       st.image(data["image"], use_container_width=True)
