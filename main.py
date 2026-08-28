@@ -33,6 +33,16 @@ GENERATIONS = {
     "9세대 (팔데아)": {"range": (906, 1025), "color": "#C2185B"},
 }
 
+# 한글 추천 포켓몬을 위한 영문 매핑
+FEATURED_POKEMON_MAP = {
+    "켄타로스": "tauros",
+    "식스테일": "vulpix",
+    "가디": "growlithe",
+    "슬리프": "drowzee",
+    "나무지기": "treecko",
+    "루브도": "smeargle",
+}
+
 
 # 페이지 이동 함수
 def go_to_page(page_name):
@@ -754,8 +764,9 @@ def get_pokemon_data(target_id):
 @st.cache_data(ttl=86400)
 def get_featured_pokemon_image(query_name):
   try:
+    en_name = FEATURED_POKEMON_MAP.get(query_name, query_name.lower())
     res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon-species/{query_name.lower()}",
+        f"https://pokeapi.co/api/v2/pokemon-species/{en_name}",
         timeout=2,
     )
     if res.status_code == 200:
