@@ -1,4 +1,5 @@
 import json
+import math
 import urllib.parse
 import requests
 import streamlit as st
@@ -78,7 +79,7 @@ TYPE_NAME_MAP = {
 }
 
 
-# 무료 구글 번역 API (외부 라이브러리 없이 요청)
+# 구글 번역 함수
 def translate_to_ko(text):
   try:
     encoded_text = urllib.parse.quote(text)
@@ -92,9 +93,45 @@ def translate_to_ko(text):
   return text
 
 
-# SVG를 사용한 정육각형(Hexagon) 레이더 차트 생성 함수
+# species URL로부터 한글 이름 가져오기
+def get_ko_name_from_species_url(url):
+  try:
+    res = requests.get(url, timeout=3)
+    if res.status_code == 200:
+      data = res.json()
+      return next(
+          (n['name'] for n in data['names'] if n['language']['name'] == 'ko'),
+          data['name'],
+      )
+  except Exception:
+    pass
+  return None
+
+
+# 진화 트리를 재귀 탐색하여 이전/다음 진화체 탐색
+def find_evolution_neighbors(chain, target_species_name):
+  prev_evos = []
+  next_evos = []
+
+  def traverse(node, current_path):
+    if node['species']['name'] == target_species_name:
+      if current_path:
+        prev_evos.append(current_path[-1])
+      for child in node.get('evolves_to', []):
+        next_evos.append(child['species'])
+      return True
+
+    for child in node.get('evolves_to', []):
+      if traverse(child, current_path + [node['species']]):
+        return True
+    return False
+
+  traverse(chain['chain'], [])
+  return prev_evos, next_evos
+
+
+# 육각형 레이더 차트 (SVG)
 def generate_hexagon_svg(stats):
-  # 방사 순서: HP, 공격, 방어, 특수공격, 특수방어, 스피드
   keys = [
       '체력(HP)',
       '공격',
@@ -104,13 +141,10 @@ def generate_hexagon_svg(stats):
       '스피드',
   ]
   vals = [stats.get(k, 0) for k in keys]
-  max_val = 160.0  # 기준 최대 능력치
-
-  import math
+  max_val = 160.0
 
   cx, cy, r = 150, 150, 100
 
-  # 육각형 백그라운드 격자선 생성
   grid_lines = ''
   for step in [0.2, 0.4, 0.6, 0.8, 1.0]:
     pts = []
@@ -124,7 +158,6 @@ def generate_hexagon_svg(stats):
         ' stroke-width="1"/>'
     )
 
-  # 중심에서 꼭짓점으로 향하는 축선
   axis_lines = ''
   for i in range(6):
     angle = math.radians(60 * i - 90)
@@ -135,7 +168,6 @@ def generate_hexagon_svg(stats):
         ' stroke-width="1"/>'
     )
 
-  # 데이터 영역 다각형 및 라벨
   data_pts = []
   labels_svg = ''
   for i, (k, v) in enumerate(zip(keys, vals)):
@@ -145,7 +177,6 @@ def generate_hexagon_svg(stats):
     y = cy + (r * ratio) * math.sin(angle)
     data_pts.append(f'{x:.1f},{y:.1f}')
 
-    # 라벨 위치
     lx = cx + (r + 25) * math.cos(angle)
     ly = cy + (r + 15) * math.sin(angle)
     labels_svg += (
@@ -155,7 +186,7 @@ def generate_hexagon_svg(stats):
 
   poly_pts = ' '.join(data_pts)
 
-  svg = f"""
+  return f"""
     <div style="display:flex; justify-content:center; align-items:center; margin: 10px 0;">
         <svg width="360" height="320" viewBox="0 0 300 300">
             {grid_lines}
@@ -165,10 +196,9 @@ def generate_hexagon_svg(stats):
         </svg>
     </div>
     """
-  return svg
 
 
-# 포켓몬 데이터 불러오기
+# 포켓몬 정보 불러오기
 @st.cache_data
 def get_pokemon_data(query):
   query = str(query).strip()
@@ -226,7 +256,7 @@ def get_pokemon_data(query):
         pokemon_data['name'],
     )
 
-    # 도감 설명 (한글 미지원 시 구글 번역 적용)
+    # 도감 설명
     ko_flavor_list = [
         f['flavor_text']
         for f in species_data['flavor_text_entries']
@@ -274,6 +304,29 @@ def get_pokemon_data(query):
       stats_dict[s_name] = s_val
       total_stats += s_val
 
+    # 진화 정보 처리
+    prev_evos_names = []
+    next_evos_names = []
+
+    evo_url = species_data.get('evolution_chain', {}).get('url')
+    if evo_url:
+      evo_res = requests.get(evo_url)
+      if evo_res.status_code == 200:
+        evo_chain = evo_res.json()
+        raw_prev, raw_next = find_evolution_neighbors(
+            evo_chain, species_data['name']
+        )
+
+        for p in raw_prev:
+          name = get_ko_name_from_species_url(p['url'])
+          if name:
+            prev_evos_names.append(name)
+
+        for n in raw_next:
+          name = get_ko_name_from_species_url(n['url'])
+          if name:
+            next_evos_names.append(name)
+
     img_url = (
         pokemon_data['sprites']['other']['official-artwork']['front_default']
         or pokemon_data['sprites']['front_default']
@@ -294,16 +347,18 @@ def get_pokemon_data(query):
         'types': ko_types,
         'stats': stats_dict,
         'total_stats': total_stats,
+        'prev_evos': prev_evos_names,
+        'next_evos': next_evos_names,
     }
   except Exception:
     return None
 
 
-# UI 레이아웃
+# 메인 화면 UI
 st.title('⚡ 포켓몬 나무위키')
 search_query = st.text_input(
-    '포켓몬 이름 또는 도감 번호를 입력하세요 (예: 피카츄, 무쇠손, 906)',
-    value='피카츄',
+    '포켓몬 이름 또는 도감 번호를 입력하세요 (예: 파이리, 리자드, 리자몽, 칠색조)',
+    value='리자드',
 )
 
 if search_query:
@@ -339,13 +394,10 @@ if search_query:
           "<h3 class='section-title'>3. 육각형 종족치 그래프</h3>",
           unsafe_allow_html=True,
       )
-
-      # SVG 방식 육각형 그래프 표시
       st.markdown(
           generate_hexagon_svg(data['stats']), unsafe_allow_html=True
       )
 
-      # 수치 표시
       stat_cols = st.columns(3)
       idx = 0
       for stat_name, stat_val in data['stats'].items():
@@ -366,25 +418,25 @@ if search_query:
       )
       st.image(data['image'], use_container_width=True)
 
+      # 오른쪽 테이블 동적 구성 (이전/다음 진화체가 있을 경우만 추가)
+      info_dict = {
+          '전국도감 번호': data['formatted_id'],
+          '분류': data['genus'],
+          '세대': data['generation'],
+          '타입': ', '.join(data['types']),
+          '신장': f"{data['height']} m",
+          '체중': f"{data['weight']} kg",
+          '포획률': f"{data['capture_rate']}",
+      }
+
+      if data['prev_evos']:
+        info_dict['이전 진화체'] = ', '.join(data['prev_evos'])
+      if data['next_evos']:
+        info_dict['다음 진화체'] = ', '.join(data['next_evos'])
+
       st.table({
-          '속성': [
-              '전국도감 번호',
-              '분류',
-              '세대',
-              '타입',
-              '신장',
-              '체중',
-              '포획률',
-          ],
-          '정보': [
-              data['formatted_id'],
-              data['genus'],
-              data['generation'],
-              ', '.join(data['types']),
-              f"{data['height']} m",
-              f"{data['weight']} kg",
-              f"{data['capture_rate']}",
-          ],
+          '속성': list(info_dict.keys()),
+          '정보': list(info_dict.values()),
       })
   else:
     st.error(f"'{search_query}' 포켓몬 정보를 찾을 수 없습니다.")
