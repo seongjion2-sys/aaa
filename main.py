@@ -403,7 +403,8 @@ def generate_hexagon_svg(stats):
     ratio = min(v / max_val, 1.0)
     x = cx + (r * ratio) * math.cos(angle)
     y = cy + (r * ratio) * math.sin(angle)
-    data_pts.append(f"{x:.1f},{y:.1f}")
+    data_pt_str = f"{x:.1f},{y:.1f}"
+    data_pts.append(data_pt_str)
 
     lx = cx + (r + 25) * math.cos(angle)
     ly = cy + (r + 15) * math.sin(angle)
@@ -442,7 +443,7 @@ def extract_single_flavor_text(species_data):
 
 
 @st.cache_data(ttl=86400)
-def get_special_forms(species_data, base_ko_name):
+def get_special_forms(species_data, base_ko_name, base_en_name):
   special_forms = []
   varieties = species_data.get("varieties", [])
 
@@ -453,32 +454,45 @@ def get_special_forms(species_data, base_ko_name):
     if is_default:
       continue
 
-    # 메가진화 또는 유대진화(ash) 형태만 남기고 일반 변형 폼은 모두 제외
     if "-mega" not in v_name and "ash" not in v_name:
       continue
 
     form_type = ""
     form_ko_title = ""
     form_desc = ""
+    item_img_url = ""
+
+    # 영문 포켓몬 이름 소문자 기준 메가스톤 파일명 매핑
+    base_lower = base_en_name.lower()
 
     if "-mega-x" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} X"
       form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
+      item_img_url = (
+          f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/{base_lower}-ite-x.png"
+      )
     elif "-mega-y" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} Y"
       form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
+      item_img_url = (
+          f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/{base_lower}-ite-y.png"
+      )
     elif "-mega" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name}"
       form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
+      item_img_url = (
+          f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/{base_lower}-ite.png"
+      )
     elif "ash" in v_name:
       form_type = "유대진화"
       form_ko_title = f"{base_ko_name} (지우개굴닌자)"
       form_desc = (
           "트레이너와의 강한 유대로 인해 한계 이상으로 변한 유대진화 모습입니다."
       )
+      item_img_url = ""
     else:
       continue
 
@@ -514,6 +528,7 @@ def get_special_forms(species_data, base_ko_name):
             "title": form_ko_title,
             "image": img_url,
             "shiny_image": shiny_img_url,
+            "item_image": item_img_url,
             "types": types_ko,
             "raw_types": types_raw,
             "def_effectiveness": def_eff,
@@ -581,6 +596,7 @@ def get_pokemon_data(query):
         ),
         pokemon_data["name"],
     )
+    en_name = pokemon_data["name"]
 
     main_flavor = extract_single_flavor_text(species_data)
 
@@ -629,7 +645,7 @@ def get_pokemon_data(query):
           if info:
             next_evos_info.append(info)
 
-    special_forms = get_special_forms(species_data, ko_name)
+    special_forms = get_special_forms(species_data, ko_name, en_name)
 
     img_url = (
         pokemon_data["sprites"]["other"]["official-artwork"]["front_default"]
@@ -645,6 +661,7 @@ def get_pokemon_data(query):
         "title": f"{ko_name} (기본)",
         "image": img_url,
         "shiny_image": shiny_img_url,
+        "item_image": "",
         "types": ko_types,
         "raw_types": raw_types,
         "def_effectiveness": def_effectiveness,
@@ -678,7 +695,7 @@ def get_pokemon_data(query):
 st.title("⚡ 포켓몬 나무위키")
 
 st.text_input(
-    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 그란돈, 디아루가, 후파)",
+    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 리자몽, 뮤츠, 개굴닌자)",
     value=st.session_state.search_query,
     key="user_input",
     on_change=update_search,
@@ -737,7 +754,16 @@ if st.session_state.search_query:
             f" {get_type_color_class(t)}'>{t}</span>"
             for t in form_info["types"]
         ])
-        st.markdown(f"### {form_info['title']} {type_badges_html}", unsafe_allow_html=True)
+
+        # 메가스톤 아이템 이미지가 있는 경우 이름 옆에 작게 렌더링
+        item_html = ""
+        if form_info.get("item_image"):
+          item_html = f"<img src='{form_info['item_image']}' style='width:32px; height:32px; vertical-align:middle; margin-left:8px;' title='필요 아이템'>"
+
+        st.markdown(
+            f"### {form_info['title']} {item_html} {type_badges_html}",
+            unsafe_allow_html=True,
+        )
 
         col1, col2 = st.columns([1.8, 1.2])
 
@@ -829,6 +855,16 @@ if st.session_state.search_query:
               st.image(form_info["shiny_image"], use_container_width=True)
             else:
               st.write("이로치 이미지가 없습니다.")
+
+          # 인포박스 내부 사진 밑에 메가스톤 아이템 이미지 추가 표시 (존재할 경우)
+          if form_info.get("item_image"):
+            st.markdown(
+                "<div style='text-align: center; margin: 10px 0; font-weight:"
+                f" bold; color: #008275;'><img src='{form_info['item_image']}'"
+                " style='width: 32px; height: 32px; vertical-align: middle;'>"
+                " 필수 도구</div>",
+                unsafe_allow_html=True,
+            )
 
           st.table({
               "속성": [
