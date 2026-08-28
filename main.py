@@ -33,7 +33,6 @@ GENERATIONS = {
     "9세대 (팔데아)": {"range": (906, 1025), "color": "#C2185B"},
 }
 
-# 한글 추천 포켓몬을 위한 영문 매핑
 FEATURED_POKEMON_MAP = {
     "켄타로스": "tauros",
     "식스테일": "vulpix",
@@ -44,14 +43,12 @@ FEATURED_POKEMON_MAP = {
 }
 
 
-# 페이지 이동 함수
 def go_to_page(page_name):
   st.session_state.current_page = page_name
   if page_name == "포켓몬 도감":
     st.session_state.selected_gen = None
 
 
-# 검색어 기록 추가 함수
 def add_search_history(query):
   query = query.strip()
   if query:
@@ -62,7 +59,6 @@ def add_search_history(query):
       st.session_state.search_history.pop()
 
 
-# 검색어 업데이트 콜백
 def update_search():
   query = st.session_state.user_input
   st.session_state.search_query = query
@@ -535,6 +531,59 @@ def get_special_forms(species_data, base_ko_name, species_name):
   special_forms = []
   varieties = species_data.get("varieties", [])
 
+  # 켄타로스(tauros)의 경우 API varieties에 빠져있는 팔데아 품종들을 명시적으로 추가
+  if species_name.lower() == "tauros":
+    paldean_urls = [
+        ("컴뱃종", f"{base_ko_name} (컴뱃종)", "https://pokeapi.co/api/v2/pokemon/tauros-paldea-combat"),
+        ("블레이즈종", f"{base_ko_name} (블레이즈종)", "https://pokeapi.co/api/v2/pokemon/tauros-paldea-blaze"),
+        ("워터종", f"{base_ko_name} (워터종)", "https://pokeapi.co/api/v2/pokemon/tauros-paldea-aqua"),
+    ]
+    for form_type, form_ko_title, p_url in paldean_urls:
+      try:
+        p_res = requests.get(p_url, timeout=2)
+        if p_res.status_code == 200:
+          p_data = p_res.json()
+          img_url = (
+              p_data["sprites"]["other"]["official-artwork"]["front_default"]
+              or p_data["sprites"]["front_default"]
+          )
+          shiny_img_url = (
+              p_data["sprites"]["other"]["official-artwork"]["front_shiny"]
+              or p_data["sprites"]["shiny_default"]
+          )
+
+          types_raw = [t["type"]["name"] for t in p_data["types"]]
+          types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
+          def_eff, atk_eff = calculate_type_effectiveness(types_raw)
+
+          stats_dict = {}
+          total_stats = 0
+          for s in p_data["stats"]:
+            s_name = STAT_NAME_MAP.get(s["stat"]["name"], s["stat"]["name"])
+            s_val = s["base_stat"]
+            stats_dict[s_name] = s_val
+            total_stats += s_val
+
+          main_flavor = extract_single_flavor_text(species_data)
+
+          special_forms.append({
+              "type": form_type,
+              "title": form_ko_title,
+              "image": img_url,
+              "shiny_image": shiny_img_url,
+              "types": types_ko,
+              "raw_types": types_raw,
+              "def_effectiveness": def_eff,
+              "atk_effectiveness": atk_eff,
+              "stats": stats_dict,
+              "total_stats": total_stats,
+              "height": p_data["height"] / 10,
+              "weight": p_data["weight"] / 10,
+              "desc": f"팔데아지방의 환경에 적응한 {form_type} 모습입니다.",
+          })
+      except Exception:
+        pass
+
   for v in varieties:
     is_default = v.get("is_default", False)
     v_name = v["pokemon"]["name"]
@@ -558,18 +607,8 @@ def get_special_forms(species_data, base_ko_name, species_name):
       form_type = "히스이폼"
       form_ko_title = f"{base_ko_name} (히스이의 모습)"
       form_desc = "과거 히스이지방의 대자연 속에서 살아오며 변화한 모습입니다."
-    elif "-combat" in v_name:
-      form_type = "컴뱃종"
-      form_ko_title = f"{base_ko_name} (컴뱃종)"
-      form_desc = "팔데아지방의 환경에 적응한 컴뱃 품종의 모습입니다."
-    elif "-blaze" in v_name:
-      form_type = "블레이즈종"
-      form_ko_title = f"{base_ko_name} (블레이즈종)"
-      form_desc = "팔데아지방의 환경에 적응한 블레이즈 품종의 모습입니다."
-    elif "-aqua" in v_name:
-      form_type = "워터종"
-      form_ko_title = f"{base_ko_name} (워터종)"
-      form_desc = "팔데아지방의 환경에 적응한 워터 품종의 모습입니다."
+    elif "-combat" in v_name or "-blaze" in v_name or "-aqua" in v_name:
+      continue  # 위에서 이미 처리함
     elif "-mega-x" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} X"
