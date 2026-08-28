@@ -17,7 +17,7 @@ def update_search():
   st.session_state.search_query = st.session_state.user_input
 
 
-# CSS 스타일 적용 (나무위키 스타일 테이블, 카드 & 타입 배경색 정의)
+# CSS 스타일 적용
 st.markdown(
     """
     <style>
@@ -124,7 +124,7 @@ st.markdown(
         margin-top: 6px;
     }
 
-    /* 나무위키 상성 표 스타일 */
+    /* 상성 표 스타일 */
     .type-table {
         width: 100%;
         border-collapse: collapse;
@@ -157,7 +157,7 @@ st.markdown(
         box-shadow: 0 1px 2px rgba(0,0,0,0.3);
     }
 
-    /* 포켓몬 공식 타입별 고유 색상 CSS */
+    /* 타입별 고유 색상 CSS */
     .bg-normal { background-color: #A8A878 !important; }
     .bg-fire { background-color: #F08030 !important; }
     .bg-water { background-color: #6890F0 !important; }
@@ -182,7 +182,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 종족치 & 타입 한글 매핑
+# 종족치 & 타입 매핑
 STAT_NAME_MAP = {
     "hp": "체력(HP)",
     "attack": "공격",
@@ -213,22 +213,17 @@ TYPE_NAME_MAP = {
     "fairy": "페어리",
 }
 
-# 영문 타입 반대 매핑 (한글 -> 영문 CSS 클래스용)
 TYPE_EN_MAP = {v: k for k, v in TYPE_NAME_MAP.items()}
-
 ALL_TYPES = list(TYPE_NAME_MAP.keys())
 
 
-# 한글 타입 명칭으로 CSS 클래스 반환하는 함수
 def get_type_color_class(ko_type_name):
   en_type = TYPE_EN_MAP.get(ko_type_name, "unknown")
   return f"bg-{en_type}"
 
 
-# 방어 및 공격 상성 상세 계산 함수
 @st.cache_data(ttl=86400)
 def calculate_type_effectiveness(raw_types):
-  # 1. 방어 상성
   defense_relations = {t: 1.0 for t in ALL_TYPES}
   for t_name in raw_types:
     try:
@@ -251,7 +246,6 @@ def calculate_type_effectiveness(raw_types):
     if mult in def_grouped:
       def_grouped[mult].append(t_name)
 
-  # 2. 공격 상성
   attack_relations = {t: 0.0 for t in ALL_TYPES}
   for t_name in raw_types:
     try:
@@ -285,7 +279,6 @@ def calculate_type_effectiveness(raw_types):
   return def_grouped, atk_grouped
 
 
-# 상성 HTML 표 생성 함수
 def render_type_table(grouped_data, is_defense=True):
   multipliers = (
       [4.0, 2.0, 1.0, 0.5, 0.25, 0.0] if is_defense else [2.0, 1.0, 0.5, 0.0]
@@ -319,7 +312,6 @@ def render_type_table(grouped_data, is_defense=True):
     """
 
 
-# 구글 번역 함수
 def translate_to_ko(text):
   try:
     encoded_text = urllib.parse.quote(text)
@@ -333,7 +325,6 @@ def translate_to_ko(text):
   return text
 
 
-# ID로 포켓몬 한글 이름 가져오는 함수
 @st.cache_data(ttl=86400)
 def get_pokemon_name_by_id(pokemon_id):
   try:
@@ -351,7 +342,6 @@ def get_pokemon_name_by_id(pokemon_id):
   return f"No.{pokemon_id}"
 
 
-# species URL로부터 한글 이름, 도감 번호, 이미지 가져오기
 def get_pokemon_info_from_species_url(url):
   try:
     res = requests.get(url, timeout=3)
@@ -386,7 +376,6 @@ def get_pokemon_info_from_species_url(url):
   return None
 
 
-# 진화 트리를 탐색하여 이전/다음 진화체 찾기
 def find_evolution_neighbors(chain, target_species_name):
   prev_evos, next_evos = [], []
 
@@ -407,7 +396,6 @@ def find_evolution_neighbors(chain, target_species_name):
   return prev_evos, next_evos
 
 
-# 육각형 레이더 차트 (SVG)
 def generate_hexagon_svg(stats):
   keys = ["체력(HP)", "공격", "방어", "특수공격", "특수방어", "스피드"]
   vals = [stats.get(k, 0) for k in keys]
@@ -467,7 +455,6 @@ def generate_hexagon_svg(stats):
     """
 
 
-# 특수 폼 체인지 목록을 가져오는 함수
 @st.cache_data(ttl=86400)
 def get_special_forms(species_data, base_ko_name):
   special_forms = []
@@ -543,8 +530,8 @@ def get_special_forms(species_data, base_ko_name):
       except Exception:
         pass
 
-  # 깨지지 않는 고화질 테라스탈 아이콘/도구 정식 이미지 URL 적용
-  terastal_img = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tera-orb.png"
+  # 캐시 우회를 위해 쿼리 스트링(?v=2)이 들어간 테라스탈 이미지 경로
+  terastal_img = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tera-orb.png?v=2"
 
   special_forms.append({
       "type": "테라스탈",
@@ -561,7 +548,6 @@ def get_special_forms(species_data, base_ko_name):
   return special_forms
 
 
-# 한국어 이름 -> ID 검색
 @st.cache_data(ttl=86400)
 def search_pokemon_id_by_name(query_name):
   query_name = query_name.strip()
@@ -582,7 +568,6 @@ def search_pokemon_id_by_name(query_name):
   return None
 
 
-# 포켓몬 데이터 가져오기
 @st.cache_data
 def get_pokemon_data(query):
   query = str(query).strip()
@@ -615,7 +600,6 @@ def get_pokemon_data(query):
         pokemon_data["name"],
     )
 
-    # 도감 설명
     ko_flavor_list = [
         f["flavor_text"]
         for f in species_data["flavor_text_entries"]
@@ -665,7 +649,6 @@ def get_pokemon_data(query):
       stats_dict[s_name] = s_val
       total_stats += s_val
 
-    # 진화 정보
     prev_evos_info, next_evos_info = [], []
     evo_url = species_data.get("evolution_chain", {}).get("url")
     if evo_url:
@@ -683,7 +666,6 @@ def get_pokemon_data(query):
           if info:
             next_evos_info.append(info)
 
-    # 특수 폼 체인지 정보 가져오기
     special_forms = get_special_forms(species_data, ko_name)
 
     img_url = (
@@ -755,7 +737,6 @@ if st.session_state.search_query:
         st.session_state.search_query = str(next_id)
         st.rerun()
 
-    # 포켓몬 이름 옆 타입 뱃지를 고유 색상으로 표시
     type_badges_html = "".join([
         f"<span class='type-badge"
         f" {get_type_color_class(t)}'>{t}</span>"
@@ -803,7 +784,6 @@ if st.session_state.search_query:
 
       st.write(f"**종족치 총합:** `{data['total_stats']}`")
 
-      # 4. 진화
       if data["prev_evos"] or data["next_evos"]:
         st.markdown(
             "<h3 class='section-title'>4. 진화</h3>", unsafe_allow_html=True
@@ -835,7 +815,6 @@ if st.session_state.search_query:
                   unsafe_allow_html=True,
               )
 
-      # 5. 타입 상성
       st.markdown(
           "<h3 class='section-title'>5. 타입 상성</h3>", unsafe_allow_html=True
       )
@@ -851,7 +830,6 @@ if st.session_state.search_query:
           unsafe_allow_html=True,
       )
 
-      # 6. 특수 폼 체인지 & 변형
       st.markdown(
           "<h3 class='section-title'>6. 특수 폼 체인지 & 변형</h3>",
           unsafe_allow_html=True,
