@@ -782,39 +782,6 @@ if st.session_state.current_page == "메인":
           unsafe_allow_html=True,
       )
 
-  # 남은 아래 부분: 인터넷 방송인 "윤진석" 포토/소개 섹션 추가
-  st.markdown("<h3 class='section-title'>🎙️ 인터넷 방송인 '윤진석' 스페셜 공간</h3>", unsafe_allow_html=True)
-  
-  streamer_col1, streamer_col2 = st.columns([1, 2])
-  with streamer_col1:
-    # 아래 src 속성에 윤진석 님의 이미지 경로 또는 URL을 넣어주세요.
-    st.markdown(
-        """
-        <div style="border: 2px solid #008275; border-radius: 12px; padding: 15px; text-align: center; background-color: rgba(0,130,117,0.05);">
-            <img src="https://via.placeholder.com/300x400?text=Yoon+Jin-seok" style="width: 100%; max-height: 350px; object-fit: cover; border-radius: 8px;">
-            <h4 style="color: #008275; margin-top: 10px; margin-bottom: 0;">인터넷 방송인 윤진석</h4>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-  with streamer_col2:
-    st.markdown(
-        """
-        <div style="padding: 10px;">
-            <h3>🌟 스트리머 윤진석 소개</h3>
-            <p style="color: #ccc; font-size: 1.05rem; line-height: 1.6;">
-                포켓몬 위키를 찾아주신 팬분들과 소통하며 다양한 컨텐츠를 진행하는 인터넷 방송인 <b>윤진석</b> 님의 스페셜 공간입니다. 
-                언제나 유쾌하고 즐거운 방송으로 활력을 불어넣어 주는 스트리머 윤진석 님의 채널과 활동을 응원합니다!
-            </p>
-            <ul style="color: #aaa; line-height: 1.8;">
-                <li>주요 방송 분야: 소통, 게임 및 종합 엔터테인먼트</li>
-                <li>특징: 뛰어난 입담과 센스 있는 진행</li>
-            </ul>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
 elif st.session_state.current_page == "포켓몬 도감":
   st.title("📖 포켓몬 도감")
 
