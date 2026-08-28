@@ -146,29 +146,8 @@ def translate_to_ko(text):
   return text
 
 
-# 전국도감 (1~1025) 포켓몬 이름-ID 매핑 캐싱 (최초 1회만 로드)
-@st.cache_data(ttl=86400)
-def get_pokemon_name_id_map():
-  name_to_id = {}
-  id_to_name = {}
-  try:
-    # 1025개 한 번에 조회
-    res = requests.get(
-        "https://pokeapi.co/api/v2/pokemon-species?limit=1025", timeout=5
-    )
-    if res.status_code == 200:
-      results = res.json()["results"]
-      for idx, item in enumerate(results, start=1):
-        eng_name = item["name"]
-        name_to_id[eng_name.lower()] = idx
-        id_to_name[idx] = eng_name
-  except Exception:
-    pass
-  return name_to_id, id_to_name
-
-
 # ID로 포켓몬 한글 이름 가져오는 함수 (캐싱 적용)
-@st.cache_data
+@st.cache_data(ttl=86400)
 def get_pokemon_name_by_id(pokemon_id):
   try:
     res = requests.get(
@@ -303,7 +282,33 @@ def generate_hexagon_svg(stats):
     """
 
 
-# 빠른 검색을 위한 데이터 처리
+# 한국어 이름 -> ID 검색 (캐싱)
+@st.cache_data(ttl=86400)
+def search_pokemon_id_by_name(query_name):
+  query_name = query_name.strip()
+
+  # 1. 영문명 시도
+  try:
+    res = requests.get(
+        f"https://pokeapi.co/api/v2/pokemon-species/{query_name.lower()}",
+        timeout=2,
+    )
+    if res.status_code == 200:
+      return res.json()["id"]
+  except Exception:
+    pass
+
+  # 2. 전국도감 범위 내 한글 검색 (한글 조회 시 캐시 활용)
+  # 한번 검색된 포켓몬은 캐시에 남음
+  for i in range(1, 1026):
+    name = get_pokemon_name_by_id(i)
+    if name == query_name:
+      return i
+
+  return None
+
+
+# 포켓몬 데이터 가져오기
 @st.cache_data
 def get_pokemon_data(query):
   query = str(query).strip()
@@ -312,17 +317,7 @@ def get_pokemon_data(query):
   if query.isdigit():
     target_id = int(query)
   else:
-    # 1. 영문명/ID 직접 API 검색 시도
-    species_res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon-species/{query.lower()}", timeout=3
-    )
-    if species_res.status_code == 200:
-      target_id = species_res.json()["id"]
-    else:
-      # 2. 한국어 이름 매핑 (1~1025)
-      name_map, _ = get_pokemon_name_id_map()
-      if query.lower() in name_map:
-        target_id = name_map[query.lower()]
+    target_id = search_pokemon_id_by_name(query)
 
   if not target_id:
     return None
@@ -451,7 +446,7 @@ st.title("⚡ 포켓몬 나무위키")
 
 # 검색 입력창
 st.text_input(
-    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 파이리, 5, Pikachu)",
+    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 피카츄, 5, Pikachu)",
     value=st.session_state.search_query,
     key="user_input",
     on_change=update_search,
