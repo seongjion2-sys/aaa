@@ -1,6 +1,4 @@
-import json
 import math
-import time
 import urllib.parse
 import requests
 import streamlit as st
@@ -15,16 +13,36 @@ if "search_query" not in st.session_state:
 if "current_page" not in st.session_state:
   st.session_state.current_page = "메인"
 
+if "selected_gen" not in st.session_state:
+  st.session_state.selected_gen = None
+
+
+# 세대별 범위 정의
+GENERATIONS = {
+    "1세대 (관동)": {"range": (1, 151), "color": "#FF5959"},
+    "2세대 (성도)": {"range": (152, 251), "color": "#FF8C42"},
+    "3세대 (호연)": {"range": (252, 386), "color": "#F3C623"},
+    "4세대 (신오)": {"range": (387, 493), "color": "#1089FF"},
+    "5세대 (하나)": {"range": (494, 649), "color": "#628E90"},
+    "6세대 (칼로스)": {"range": (650, 721), "color": "#7B1FA2"},
+    "7세대 (알로라)": {"range": (722, 809), "color": "#FF7043"},
+    "8세대 (가라르)": {"range": (810, 905), "color": "#00838F"},
+    "9세대 (팔데아)": {"range": (906, 1025), "color": "#C2185B"},
+}
+
 
 # 페이지 이동 함수
 def go_to_page(page_name):
   st.session_state.current_page = page_name
+  if page_name == "포켓몬 도감":
+    st.session_state.selected_gen = None
 
 
 # 검색어 업데이트 콜백
 def update_search():
   st.session_state.search_query = st.session_state.user_input
   st.session_state.current_page = "포켓몬 도감"
+  st.session_state.selected_gen = None
 
 
 # CSS 스타일 적용
@@ -125,6 +143,16 @@ st.markdown(
         flex-direction: column;
         align-items: center;
         justify-content: center;
+    }
+    .gen-banner {
+        border-radius: 12px;
+        padding: 25px 15px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 10px;
+        font-size: 1.2rem;
     }
     .type-table {
         width: 100%;
@@ -636,7 +664,6 @@ def get_special_forms(species_data, base_ko_name, species_name):
 def search_pokemon_id_by_name(query_name):
   query_name = query_name.strip().lower()
 
-  # 1. 영단어로 직접 검색 시도
   try:
     res = requests.get(
         f"https://pokeapi.co/api/v2/pokemon-species/{query_name}", timeout=2
@@ -646,7 +673,6 @@ def search_pokemon_id_by_name(query_name):
   except Exception:
     pass
 
-  # 2. 한글 이름 매칭을 위한 목록 조회 (빠른 매칭을 위해 전체 species 리스트 대상 검색)
   try:
     list_res = requests.get(
         "https://pokeapi.co/api/v2/pokemon-species?limit=1025", timeout=4
@@ -655,7 +681,6 @@ def search_pokemon_id_by_name(query_name):
       results = list_res.json().get("results", [])
       for idx, item in enumerate(results):
         p_id = idx + 1
-        # 캐싱된 함수 활용 혹은 직접 조회
         ko_name = get_pokemon_name_by_id(p_id)
         if ko_name and query_name in ko_name.lower():
           return p_id
@@ -813,12 +838,12 @@ def get_featured_pokemon_image(query_name):
 # 사이드바 네비게이션
 st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
-  go_to_page("메인")
+  go_to_page("Main")
 
 
 # ==================== 페이지 라우팅 ====================
 
-if st.session_state.current_page == "메인":
+if st.session_state.current_page == "Main":
   st.title("⚡ 포켓몬 나무위키 통합 메인")
   st.write("원하시는 도감을 선택하여 상세 정보를 확인해 보세요!")
 
@@ -829,13 +854,12 @@ if st.session_state.current_page == "메인":
         <div class="menu-card">
             <div style="font-size: 2.2rem; margin-bottom: 8px;">📖</div>
             <div style="font-weight: bold; font-size: 1.2rem; color: #008275; margin-bottom: 6px;">포켓몬 도감</div>
-            <div style="font-size: 0.85rem; color: #666;">전국 포켓몬들의 상세 정보, 종족치, 진화 및 타입 상성을 확인하세요.</div>
+            <div style="font-size: 0.85rem; color: #666;">전국 포켓몬들의 상세 정보, 세대별 목록, 종족치 및 상성을 확인하세요.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
     if st.button("포켓몬 도감 이동하기", key="btn_pokedex", use_container_width=True):
-      st.session_state.search_query = ""
       go_to_page("포켓몬 도감")
       st.rerun()
 
@@ -893,6 +917,7 @@ if st.session_state.current_page == "메인":
       )
       if st.button("이동하기", key=f"feat_btn_{idx}", use_container_width=True):
         st.session_state.search_query = p_name
+        st.session_state.selected_gen = None
         go_to_page("포켓몬 도감")
         st.rerun()
 
@@ -900,7 +925,8 @@ elif st.session_state.current_page == "포켓몬 도감":
   st.title("📖 포켓몬 도감")
 
   st.write(
-      "**포켓몬 이름 또는 도감 번호를 입력하세요 (예: 켄타로스, 식스테일, 리자몽)**"
+      "**포켓몬 이름 또는 도감 번호를 입력하거나, 아래에서 세대별 배너를"
+      " 선택하세요.**"
   )
   st.text_input(
       "포켓몬 검색",
@@ -911,14 +937,69 @@ elif st.session_state.current_page == "포켓몬 도감":
       placeholder="포켓몬 이름 또는 도감 번호 입력...",
   )
 
-  if not st.session_state.search_query.strip():
-    st.markdown("<br><br>", unsafe_allow_html=True)
+  # 검색어가 없고 선택된 세도 없으면 9개 세대 배너 표시
+  if not st.session_state.search_query.strip() and not st.session_state.selected_gen:
     st.markdown(
-        "<h2 style='text-align: center; color: #888;'>포켓몬을 검색해"
-        " 보세요!</h2>",
-        unsafe_allow_html=True,
+        "<h3 class='section-title'>📦 세대별 도감 선택</h3>", unsafe_allow_html=True
     )
+
+    gen_keys = list(GENERATIONS.keys())
+    for r in range(3):
+      cols = st.columns(3)
+      for c in range(3):
+        idx = r * 3 + c
+        if idx < len(gen_keys):
+          g_name = gen_keys[idx]
+          g_info = GENERATIONS[g_name]
+          start, end = g_info["range"]
+          with cols[c]:
+            st.markdown(
+                f"""
+                <div class="gen-banner" style="background-color: {g_info['color']};">
+                    {g_name}<br>
+                    <span style="font-size: 0.85rem; font-weight: normal;">No.{str(start).zfill(3)} ~ No.{str(end).zfill(3)}</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                f"{g_name} 보기", key=f"gen_btn_{idx}", use_container_width=True
+            ):
+              st.session_state.selected_gen = g_name
+              st.rerun()
+
+  # 세대가 선택된 경우 해당 세대의 포켓몬 목록 표시
+  elif st.session_state.selected_gen and not st.session_state.search_query.strip():
+    g_name = st.session_state.selected_gen
+    start, end = GENERATIONS[g_name]["range"]
+
+    if st.button("◀ 세대 선택 화면으로 돌아가기"):
+      st.session_state.selected_gen = None
+      st.rerun()
+
+    st.markdown(f"<h3 class='section-title'>⚡ {g_name} 목록</h3>", unsafe_allow_html=True)
+    st.write(f"No.{start} ~ No.{end} 포켓몬을 선택하세요.")
+
+    # 간이 목록 버튼 그리드 (예시로 3열 배치)
+    poke_cols = st.columns(3)
+    for p_id in range(start, end + 1):
+      p_name = get_pokemon_name_by_id(p_id)
+      col_idx = (p_id - start) % 3
+      with poke_cols[col_idx]:
+        if st.button(
+            f"No.{str(p_id).zfill(4)} {p_name}",
+            key=f"poke_list_{p_id}",
+            use_container_width=True,
+        ):
+          st.session_state.search_query = str(p_id)
+          st.rerun()
+
   else:
+    if st.button("◀ 도감 메인/세대 선택으로 돌아가기"):
+      st.session_state.search_query = ""
+      st.session_state.selected_gen = None
+      st.rerun()
+
     query_text = str(st.session_state.search_query).strip()
     data = get_pokemon_data(query_text)
 
@@ -955,10 +1036,7 @@ elif st.session_state.current_page == "포켓몬 도감":
           unsafe_allow_html=True,
       )
 
-      form_tab_titles = []
-      for f in data["forms"]:
-        form_tab_titles.append(f["type"])
-
+      form_tab_titles = [f["type"] for f in data["forms"]]
       form_tabs = st.tabs(form_tab_titles)
 
       for tab_idx, form_info in enumerate(data["forms"]):
