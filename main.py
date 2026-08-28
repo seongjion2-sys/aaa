@@ -10,7 +10,7 @@ st.set_page_config(page_title="포켓몬 위키", page_icon="⚡", layout="wide"
 
 # Session State 초기화
 if "search_query" not in st.session_state:
-  st.session_state.search_query = "658"  # 기본값: No.658 (개굴닌자)
+  st.session_state.search_query = ""  # 초기 검색어를 빈 값으로 설정
 
 if "current_page" not in st.session_state:
   st.session_state.current_page = "메인"  # 기본 페이지: 메인 메뉴
@@ -706,6 +706,8 @@ st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
   go_to_page("메인")
 if st.sidebar.button("📖 포켓몬 도감", use_container_width=True):
+  # 포켓몬 도감 버튼을 누를 때 검색어를 비워 빈 화면 상태로 이동
+  st.session_state.search_query = ""
   go_to_page("포켓몬 도감")
 if st.sidebar.button("👤 인물 도감", use_container_width=True):
   go_to_page("인물 도감")
@@ -734,6 +736,7 @@ if st.session_state.current_page == "메인":
         unsafe_allow_html=True,
     )
     if st.button("포켓몬 도감 이동하기", use_container_width=True):
+      st.session_state.search_query = ""
       go_to_page("포켓몬 도감")
 
   with col2:
@@ -792,7 +795,15 @@ elif st.session_state.current_page == "포켓몬 도감":
       on_change=update_search,
   )
 
-  if st.session_state.search_query:
+  # 검색어가 없을 때 빈 화면과 안내 문구 출력
+  if not st.session_state.search_query.strip():
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown(
+        "<h2 style='text-align: center; color: #888;'>포켓몬을 검색해"
+        " 보세요!</h2>",
+        unsafe_allow_html=True,
+    )
+  else:
     query_text = str(st.session_state.search_query).strip()
     data = get_pokemon_data(query_text)
 
