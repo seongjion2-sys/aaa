@@ -682,6 +682,25 @@ def get_pokemon_data(query):
     return None
 
 
+@st.cache_data(ttl=86400)
+def get_featured_pokemon_image(query_name):
+  target_id = search_pokemon_id_by_name(query_name)
+  if target_id:
+    try:
+      res = requests.get(
+          f"https://pokeapi.co/api/v2/pokemon/{target_id}", timeout=2
+      )
+      if res.status_code == 200:
+        p_data = res.json()
+        return (
+            p_data["sprites"]["other"]["official-artwork"]["front_default"]
+            or p_data["sprites"]["front_default"]
+        )
+    except Exception:
+      pass
+  return ""
+
+
 # 사이드바 네비게이션
 st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
@@ -744,6 +763,24 @@ if st.session_state.current_page == "메인":
     )
     if st.button("맵 도감 이동하기", use_container_width=True):
       go_to_page("맵 도감")
+
+  st.markdown("<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>", unsafe_allow_html=True)
+  
+  featured_pokemons = ["딜리버드", "귀뚤뚜기", "헤라크로스", "슬리프", "나무지기", "루브도"]
+  f_cols = st.columns(6)
+
+  for idx, p_name in enumerate(featured_pokemons):
+    img_url = get_featured_pokemon_image(p_name)
+    with f_cols[idx]:
+      st.markdown(
+          f"""
+          <div style="border: 1px solid #333; border-radius: 8px; padding: 10px; text-align: center; background-color: rgba(255,255,255,0.03);">
+              <img src="{img_url}" style="width: 100%; height: 100px; object-fit: contain;">
+              <p style="font-weight: bold; margin-top: 8px; margin-bottom: 0;">{p_name}</p>
+          </div>
+          """,
+          unsafe_allow_html=True,
+      )
 
 elif st.session_state.current_page == "포켓몬 도감":
   st.title("📖 포켓몬 도감")
