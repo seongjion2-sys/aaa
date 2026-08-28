@@ -485,14 +485,43 @@ def get_special_forms(species_data, base_ko_name):
     if is_default:
       continue
 
-    if "-mega" not in v_name and "ash" not in v_name:
-      continue
-
     form_type = ""
     form_ko_title = ""
     form_desc = ""
 
-    if "-mega-x" in v_name:
+    # 지역 폼 (Alola, Galar, Hisui, Paldea 등) 감지
+    if "-alola" in v_name:
+      form_type = "알로라폼"
+      form_ko_title = f"{base_ko_name} (알로라의 모습)"
+      form_desc = "알로라지방의 기후와 환경에 적응해 변화한 모습입니다."
+    elif "-galar" in v_name:
+      form_type = "가라르폼"
+      form_ko_title = f"{base_ko_name} (가라르의 모습)"
+      form_desc = "가라르지방의 독특한 환경에서 살아가는 모습입니다."
+    elif "-hisui" in v_name:
+      form_type = "히스이폼"
+      form_ko_title = f"{base_ko_name} (히스이의 모습)"
+      form_desc = "과거 히스이지방의 대자연 속에서 살아오며 변화한 모습입니다."
+    elif "-paldea" in v_name:
+      form_type = "팔데아폼"
+      form_ko_title = f"{base_ko_name} (팔데아의 모습)"
+      form_desc = "팔데아지방의 거친 환경에 적응하여 진화한 모습입니다."
+    # 특수 켄타로스 품종 (블레이즈/아쿠아 브리드 등) 추가 대응
+    elif "-combat-breed" in v_name:
+      form_type = "컴뱃종"
+      form_ko_title = f"{base_ko_name} (컴뱃종)"
+      form_desc = "격투 타입의 힘을 지닌 팔데아 켄타로스의 기본 품종입니다."
+    elif "-blaze-breed" in v_name:
+      form_type = "블레이즈종"
+      form_ko_title = f"{base_ko_name} (블레이즈종)"
+      form_desc = (
+          "화난 듯한 붉은 털과 불꽃/격투 타입을 지닌 팔데아 켄타로스입니다."
+      )
+    elif "-aqua-breed" in v_name:
+      form_type = "아쿠아종"
+      form_ko_title = f"{base_ko_name} (아쿠아종)"
+      form_desc = "물결 같은 뿔과 물/격투 타입을 지닌 팔데아 켄타로스입니다."
+    elif "-mega-x" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} X"
       form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
@@ -788,9 +817,9 @@ if st.session_state.current_page == "메인":
   st.markdown("<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>", unsafe_allow_html=True)
 
   featured_pokemons = [
-      "딜리버드",
-      "귀뚤뚜기",
-      "헤라크로스",
+      "켄타로스",
+      "식스테일",
+      "가디",
       "슬리프",
       "나무지기",
       "루브도",
@@ -809,12 +838,16 @@ if st.session_state.current_page == "메인":
           """,
           unsafe_allow_html=True,
       )
+      if st.button("이동하기", key=f"feat_btn_{idx}", use_container_width=True):
+        st.session_state.search_query = p_name
+        go_to_page("포켓몬 도감")
+        st.rerun()
 
 elif st.session_state.current_page == "포켓몬 도감":
   st.title("📖 포켓몬 도감")
 
   st.write(
-      "**포켓몬 이름 또는 도감 번호를 입력하세요 (예: 개굴닌자, 리자몽, 뮤츠)**"
+      "**포켓몬 이름 또는 도감 번호를 입력하세요 (예: 켄타로스, 식스테일, 리자몽)**"
   )
   st.text_input(
       "포켓몬 검색",
