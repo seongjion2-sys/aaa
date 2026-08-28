@@ -539,7 +539,7 @@ def get_special_forms(species_data, base_ko_name, species_name):
     is_default = v.get("is_default", False)
     v_name = v["pokemon"]["name"]
 
-    if is_default or "paldea" in v_name:
+    if is_default:
       continue
 
     form_type = ""
@@ -558,6 +558,18 @@ def get_special_forms(species_data, base_ko_name, species_name):
       form_type = "히스이폼"
       form_ko_title = f"{base_ko_name} (히스이의 모습)"
       form_desc = "과거 히스이지방의 대자연 속에서 살아오며 변화한 모습입니다."
+    elif "-paldea-combat" in v_name:
+      form_type = "팔데아폼"
+      form_ko_title = f"{base_ko_name} (팔데아의 모습·컴뱃 블레이즈)"
+      form_desc = "팔데아지방의 환경에 적응한 컴뱃 품종의 모습입니다."
+    elif "-paldea-blaze" in v_name:
+      form_type = "팔데아폼"
+      form_ko_title = f"{base_ko_name} (팔데아의 모습·블레이즈 Breed)"
+      form_desc = "팔데아지방의 환경에 적응한 블레이즈 품종의 모습입니다."
+    elif "-paldea-aqua" in v_name:
+      form_type = "팔데아폼"
+      form_ko_title = f"{base_ko_name} (팔데아의 모습·아쿠아 Breed)"
+      form_desc = "팔데아지방의 환경에 적응한 아쿠아 품종의 모습입니다."
     elif "-mega-x" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} X"
@@ -1142,7 +1154,6 @@ elif st.session_state.current_page == "포켓몬 도감":
         "<h3 class='section-title'>📦 세대별 도감 선택</h3>", unsafe_allow_html=True
     )
 
-    # 1~9세대 카드(3열씩 3줄 = 9개) + 10번째 칸(전국 도감) 출력 루프
     all_menu_items = list(GENERATIONS.keys()) + ["전국 도감"]
 
     for r in range(4):
