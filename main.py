@@ -9,7 +9,7 @@ st.set_page_config(page_title="포켓몬 위키", page_icon="⚡", layout="wide"
 
 # Session State 초기화
 if "search_query" not in st.session_state:
-  st.session_state.search_query = "670"  # 기본값: No.670 (플라엣테)
+  st.session_state.search_query = "483"  # 기본값: No.483 (디아루가)
 
 
 # 검색어 업데이트 콜백
@@ -95,6 +95,32 @@ st.markdown(
     .evo-name {
         font-size: 1.05rem;
         font-weight: bold;
+    }
+
+    /* 버전별 도감 설명 테이블 스타일 */
+    .dex-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+        border: 1px solid #444;
+    }
+    .dex-table th {
+        background-color: #262626;
+        color: #ddd;
+        padding: 8px 10px;
+        border: 1px solid #444;
+        text-align: center;
+        width: 25%;
+    }
+    .dex-table td {
+        background-color: #1a1a1a;
+        color: #eee;
+        padding: 10px 12px;
+        border: 1px solid #444;
+        text-align: left;
+        width: 75%;
     }
 
     /* 상성 표 스타일 */
@@ -187,6 +213,48 @@ TYPE_NAME_MAP = {
 
 TYPE_EN_MAP = {v: k for k, v in TYPE_NAME_MAP.items()}
 ALL_TYPES = list(TYPE_NAME_MAP.keys())
+
+VERSION_NAME_MAP = {
+    "red": "레드",
+    "blue": "블루",
+    "yellow": "옐로",
+    "gold": "골드",
+    "silver": "실버",
+    "crystal": "크리스탈",
+    "ruby": "루비",
+    "sapphire": "사파이어",
+    "emerald": "에메랄드",
+    "firered": "파이어레드",
+    "leafgreen": "리프그린",
+    "diamond": "다이아몬드",
+    "pearl": "펄",
+    "platinum": "플래티넘",
+    "heartgold": "하트골드",
+    "soulsilver": "소울실버",
+    "black": "블랙",
+    "white": "화이트",
+    "black-2": "블랙 2",
+    "white-2": "화이트 2",
+    "x": "X",
+    "y": "Y",
+    "omega-ruby": "오메가루비",
+    "alpha-sapphire": "알파사파이어",
+    "sun": "썬",
+    "moon": "문",
+    "ultra-sun": "울트라썬",
+    "ultra-moon": "울트라문",
+    "lets-go-pikachu": "피카츄",
+    "lets-go-eevee": "이브이",
+    "sword": "소드",
+    "shield": "실드",
+    "the-isle-of-armor": "갑옷의 섬",
+    "the-crown-tundra": "왕관의 설원",
+    "brilliant-diamond": "브릴리언트 다이아몬드",
+    "shining-pearl": "샤이닝 펄",
+    "legends-arceus": "PLA",
+    "scarlet": "스칼렛",
+    "violet": "바이올렛",
+}
 
 
 def get_type_color_class(ko_type_name):
@@ -371,7 +439,7 @@ def find_evolution_neighbors(chain, target_species_name):
 def generate_hexagon_svg(stats):
   keys = ["체력(HP)", "공격", "방어", "특수공격", "특수방어", "스피드"]
   vals = [stats.get(k, 0) for k in keys]
-  max_val = 255.0  # 종족치 최대치 기준 스케일 조정 (원시회귀/종족치 높은 폼 대응)
+  max_val = 255.0
   cx, cy, r = 150, 150, 100
 
   grid_lines = ""
@@ -425,6 +493,36 @@ def generate_hexagon_svg(stats):
         </svg>
     </div>
     """
+
+
+@st.cache_data(ttl=86400)
+def extract_version_flavor_texts(species_data):
+  flavor_entries = species_data.get("flavor_text_entries", [])
+  version_texts = {}
+
+  for entry in flavor_entries:
+    lang = entry["language"]["name"]
+    ver = entry["version"]["name"]
+    text = entry["flavor_text"].replace("\n", " ").replace("\f", " ")
+
+    if lang == "ko":
+      if ver not in version_texts:
+        version_texts[ver] = text
+    elif lang == "en" and ver not in version_texts:
+      # 한국어가 없을 경우 영어를 번역해서 백업으로 활용
+      version_texts[ver] = translate_to_ko(text)
+
+  formatted_list = []
+  for v_key, v_name in VERSION_NAME_MAP.items():
+    if v_key in version_texts:
+      formatted_list.append((v_name, version_texts[v_key]))
+
+  # 매핑되지 않은 기타 버전 처리
+  for ver, text in version_texts.items():
+    if ver not in VERSION_NAME_MAP:
+      formatted_list.append((ver.capitalize(), text))
+
+  return formatted_list
 
 
 @st.cache_data(ttl=86400)
@@ -525,6 +623,9 @@ def get_special_forms(species_data, base_ko_name):
           if not form_ko_title:
             form_ko_title = f"{base_ko_name} 폼"
 
+          # 폼별 고유 버전별 설명 (기본적으로 species 데이터 공용 사용하되 개별 폼 전용 텍스트 필터링 가능)
+          version_flavor_list = extract_version_flavor_texts(species_data)
+
           special_forms.append({
               "type": form_type or "폼 체인지",
               "title": form_ko_title,
@@ -539,6 +640,7 @@ def get_special_forms(species_data, base_ko_name):
               "height": p_data["height"] / 10,
               "weight": p_data["weight"] / 10,
               "desc": form_desc or "특수 폼 체인지 형태입니다.",
+              "version_flavor_list": version_flavor_list,
           })
       except Exception:
         pass
@@ -598,26 +700,12 @@ def get_pokemon_data(query):
         pokemon_data["name"],
     )
 
-    ko_flavor_list = [
-        f["flavor_text"]
-        for f in species_data["flavor_text_entries"]
-        if f["language"]["name"] == "ko"
-    ]
-    if ko_flavor_list:
-      ko_flavor = ko_flavor_list[-1].replace("\n", " ").replace("\f", " ")
-    else:
-      en_flavor_list = [
-          f["flavor_text"]
-          for f in species_data["flavor_text_entries"]
-          if f["language"]["name"] == "en"
-      ]
-      ko_flavor = (
-          translate_to_ko(
-              en_flavor_list[-1].replace("\n", " ").replace("\f", " ")
-          )
-          if en_flavor_list
-          else "도감 설명이 존재하지 않습니다."
-      )
+    version_flavor_list = extract_version_flavor_texts(species_data)
+    main_flavor = (
+        version_flavor_list[0][1]
+        if version_flavor_list
+        else "도감 설명이 존재하지 않습니다."
+    )
 
     ko_genus = next(
         (
@@ -688,7 +776,8 @@ def get_pokemon_data(query):
         "total_stats": total_stats,
         "height": pokemon_data["height"] / 10,
         "weight": pokemon_data["weight"] / 10,
-        "desc": ko_flavor,
+        "desc": main_flavor,
+        "version_flavor_list": version_flavor_list,
     }
 
     all_forms = [base_form_data] + special_forms
@@ -713,7 +802,7 @@ def get_pokemon_data(query):
 st.title("⚡ 포켓몬 나무위키")
 
 st.text_input(
-    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 그란돈, 후파, 플라엣테)",
+    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 디아루가, 그란돈, 후파)",
     value=st.session_state.search_query,
     key="user_input",
     on_change=update_search,
@@ -758,7 +847,6 @@ if st.session_state.search_query:
         unsafe_allow_html=True,
     )
 
-    # 전체 폼 목록 탭 구성 (기본, 영원의 꽃, 원시회귀, 해방된 폼 등 각각의 독립 탭)
     form_tab_titles = []
     for f in data["forms"]:
       if f["type"] == "기본":
@@ -781,19 +869,21 @@ if st.session_state.search_query:
 
         with col1:
           st.markdown(
-              "<h3 class='section-title'>1. 개요 및 설명</h3>",
+              "<h3 class='section-title'>1. 개요 및 버전별 도감 설명</h3>",
               unsafe_allow_html=True,
           )
-          if tab_idx == 0:
-            st.write(
-                f"**{data['name']}**은(는) {data['generation']}에 처음 등장한"
-                f" {data['genus']}입니다."
+
+          # 버전별 도감 설명 테이블 생성 (나무위키 스타일)
+          v_rows = ""
+          for v_name, v_desc in form_info["version_flavor_list"]:
+            v_rows += f"<tr><th>{v_name}</th><td>{v_desc}</td></tr>"
+
+          if v_rows:
+            st.markdown(
+                f"<table class='dex-table'>{v_rows}</table>",
+                unsafe_allow_html=True,
             )
-            st.info(f'"{form_info["desc"]}"')
           else:
-            st.write(
-                f"**{form_info['title']}** 형태의 {data['name']} 정보입니다."
-            )
             st.info(f'"{form_info["desc"]}"')
 
           st.markdown(
