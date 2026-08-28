@@ -708,17 +708,10 @@ def get_featured_pokemon_image(query_name):
   return ""
 
 
-# 사이드바 네비게이션
+# 사이드바 네비게이션 (메인 메뉴만 남김)
 st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
   go_to_page("메인")
-if st.sidebar.button("📖 포켓몬 도감", use_container_width=True):
-  st.session_state.search_query = ""
-  go_to_page("포켓몬 도감")
-if st.sidebar.button("👤 인물 도감", use_container_width=True):
-  go_to_page("인물 도감")
-if st.sidebar.button("🗺️ 맵 도감", use_container_width=True):
-  go_to_page("맵 도감")
 
 
 # ==================== 페이지 라우팅 ====================
