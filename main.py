@@ -825,7 +825,7 @@ if st.session_state.search_query:
           unsafe_allow_html=True,
       )
 
-      # 탭 동적 생성: 기본 일반/이로치 탭에 영원의 꽃 등의 특수 폼이 있다면 탭으로 추가
+      # 탭 동적 생성: 일반, 이로치 및 특수 폼(영원의 꽃 등)
       form_tabs_labels = ["일반", "✨ 이로치"]
       for form in data["special_forms"]:
         form_tabs_labels.append(form["type"])
