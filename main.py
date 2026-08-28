@@ -9,7 +9,7 @@ st.set_page_config(page_title="포켓몬 위키", page_icon="⚡", layout="wide"
 
 # Session State 초기화
 if "search_query" not in st.session_state:
-  st.session_state.search_query = "483"  # 기본값: No.483 (디아루가)
+  st.session_state.search_query = "383"  # 기본값: No.383 (그란돈)
 
 
 # 검색어 업데이트 콜백
@@ -509,18 +509,20 @@ def extract_version_flavor_texts(species_data):
       if ver not in version_texts:
         version_texts[ver] = text
     elif lang == "en" and ver not in version_texts:
-      # 한국어가 없을 경우 영어를 번역해서 백업으로 활용
       version_texts[ver] = translate_to_ko(text)
 
-  formatted_list = []
-  for v_key, v_name in VERSION_NAME_MAP.items():
-    if v_key in version_texts:
-      formatted_list.append((v_name, version_texts[v_key]))
-
-  # 매핑되지 않은 기타 버전 처리
+  # 1단계: 내용별로 버전들 그룹화 (블랙/화이트처럼 설명이 정확히 같으면 묶기 위함)
+  text_to_versions = {}
   for ver, text in version_texts.items():
-    if ver not in VERSION_NAME_MAP:
-      formatted_list.append((ver.capitalize(), text))
+    v_name = VERSION_NAME_MAP.get(ver, ver.capitalize())
+    if text not in text_to_versions:
+      text_to_versions[text] = []
+    text_to_versions[text].append(v_name)
+
+  # 2단계: 표에 출력할 목록으로 재구성 (설명이 다르면 각각 유지, 같으면 슬래시로 묶음)
+  formatted_list = []
+  for text, v_names in text_to_versions.items():
+    formatted_list.append(("/".join(v_names), text))
 
   return formatted_list
 
@@ -623,7 +625,6 @@ def get_special_forms(species_data, base_ko_name):
           if not form_ko_title:
             form_ko_title = f"{base_ko_name} 폼"
 
-          # 폼별 고유 버전별 설명 (기본적으로 species 데이터 공용 사용하되 개별 폼 전용 텍스트 필터링 가능)
           version_flavor_list = extract_version_flavor_texts(species_data)
 
           special_forms.append({
@@ -802,7 +803,7 @@ def get_pokemon_data(query):
 st.title("⚡ 포켓몬 나무위키")
 
 st.text_input(
-    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 디아루가, 그란돈, 후파)",
+    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 그란돈, 디아루가, 후파)",
     value=st.session_state.search_query,
     key="user_input",
     on_change=update_search,
@@ -873,7 +874,6 @@ if st.session_state.search_query:
               unsafe_allow_html=True,
           )
 
-          # 버전별 도감 설명 테이블 생성 (나무위키 스타일)
           v_rows = ""
           for v_name, v_desc in form_info["version_flavor_list"]:
             v_rows += f"<tr><th>{v_name}</th><td>{v_desc}</td></tr>"
