@@ -450,21 +450,7 @@ def get_special_forms(species_data, base_ko_name):
     is_default = v.get("is_default", False)
     v_name = v["pokemon"]["name"]
 
-    if is_default and not any(
-        x in v_name
-        for x in [
-            "-mega",
-            "-origin",
-            "-primal",
-            "-gmax",
-            "unbound",
-            "active",
-            "therian",
-            "crowned",
-            "hero",
-            "eternal",
-        ]
-    ):
+    if is_default:
       continue
 
     form_type = ""
@@ -503,61 +489,62 @@ def get_special_forms(species_data, base_ko_name):
       form_type = "영원의 꽃"
       form_ko_title = f"{base_ko_name} (영원의 꽃)"
       form_desc = "특별한 꽃을 품은 영원의 꽃 형태입니다."
-    elif not is_default:
+    elif "ash" in v_name:
+      form_type = "유대진화"
+      form_ko_title = f"{base_ko_name} (지우개굴닌자)"
+      form_desc = "트레이너와의 강한 유대로 인해 한계 이상으로 변한 모습입니다."
+    else:
       form_type = "폼 체인지"
       form_ko_title = f"{base_ko_name} (변형)"
       form_desc = "포켓몬의 또 다른 형태입니다."
 
-    if form_type or not is_default:
-      try:
-        p_res = requests.get(v["pokemon"]["url"], timeout=2)
-        if p_res.status_code == 200:
-          p_data = p_res.json()
-          img_url = (
-              p_data["sprites"]["other"]["official-artwork"]["front_default"]
-              or p_data["sprites"]["front_default"]
-          )
-          shiny_img_url = (
-              p_data["sprites"]["other"]["official-artwork"][
-                  "front_shiny"
-              ]
-              or p_data["sprites"]["front_shiny"]
-          )
+    try:
+      p_res = requests.get(v["pokemon"]["url"], timeout=2)
+      if p_res.status_code == 200:
+        p_data = p_res.json()
+        img_url = (
+            p_data["sprites"]["other"]["official-artwork"]["front_default"]
+            or p_data["sprites"]["front_default"]
+        )
+        shiny_img_url = (
+            p_data["sprites"]["other"]["official-artwork"]["front_shiny"]
+            or p_data["sprites"]["front_shiny"]
+        )
 
-          types_raw = [t["type"]["name"] for t in p_data["types"]]
-          types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
-          def_eff, atk_eff = calculate_type_effectiveness(types_raw)
+        types_raw = [t["type"]["name"] for t in p_data["types"]]
+        types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
+        def_eff, atk_eff = calculate_type_effectiveness(types_raw)
 
-          stats_dict = {}
-          total_stats = 0
-          for s in p_data["stats"]:
-            s_name = STAT_NAME_MAP.get(s["stat"]["name"], s["stat"]["name"])
-            s_val = s["base_stat"]
-            stats_dict[s_name] = s_val
-            total_stats += s_val
+        stats_dict = {}
+        total_stats = 0
+        for s in p_data["stats"]:
+          s_name = STAT_NAME_MAP.get(s["stat"]["name"], s["stat"]["name"])
+          s_val = s["base_stat"]
+          stats_dict[s_name] = s_val
+          total_stats += s_val
 
-          if not form_ko_title:
-            form_ko_title = f"{base_ko_name} 폼"
+        if not form_ko_title:
+          form_ko_title = f"{base_ko_name} 폼"
 
-          main_flavor = extract_single_flavor_text(species_data)
+        main_flavor = extract_single_flavor_text(species_data)
 
-          special_forms.append({
-              "type": form_type or "폼 체인지",
-              "title": form_ko_title,
-              "image": img_url,
-              "shiny_image": shiny_img_url,
-              "types": types_ko,
-              "raw_types": types_raw,
-              "def_effectiveness": def_eff,
-              "atk_effectiveness": atk_eff,
-              "stats": stats_dict,
-              "total_stats": total_stats,
-              "height": p_data["height"] / 10,
-              "weight": p_data["weight"] / 10,
-              "desc": form_desc or main_flavor,
-          })
-      except Exception:
-        pass
+        special_forms.append({
+            "type": form_type,
+            "title": form_ko_title,
+            "image": img_url,
+            "shiny_image": shiny_img_url,
+            "types": types_ko,
+            "raw_types": types_raw,
+            "def_effectiveness": def_eff,
+            "atk_effectiveness": atk_eff,
+            "stats": stats_dict,
+            "total_stats": total_stats,
+            "height": p_data["height"] / 10,
+            "weight": p_data["weight"] / 10,
+            "desc": form_desc or main_flavor,
+        })
+    except Exception:
+      pass
 
   return special_forms
 
@@ -834,7 +821,11 @@ if st.session_state.search_query:
           )
           st.write("##### **[공격 상성]** (자신의 타입 기술로 공격 시 배율)")
           st.markdown(
-              render_type_table(form_info["atk_effectiveness"], is_defense=False),
+              render_type_name_table
+              if "render_type_name_table" in locals()
+              else render_type_table(
+                  form_info["atk_effectiveness"], is_defense=False
+              ),
               unsafe_allow_html=True,
           )
 
