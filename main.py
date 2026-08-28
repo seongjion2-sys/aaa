@@ -808,8 +808,9 @@ st.text_input(
 if st.session_state.search_query:
   query_text = str(st.session_state.search_query).strip()
 
-  # 예상 시간 표시가 포함된 커스텀 프로그레스바 로딩 구현
-  progress_text = st.empty(
+  # 예상 시간 표시가 포함된 커스텀 프로그레스바 로딩 구현 (오류 수정 완료)
+  progress_text = st.empty()
+  progress_text.markdown(
       f"⚡ '{query_text}' 포켓몬 정보를 불러오는 중입니다... (예상 소요 시간:"
       " 약 1~2초)"
   )
@@ -826,7 +827,6 @@ if st.session_state.search_query:
   progress_bar.empty()
   progress_text.empty()
 
-  # 만약 위 루프 전후로 데이터가 안 불러와졌을 경우 대비해 한 번 더 체크
   if "data" not in locals() or data is None:
     data = get_pokemon_data(query_text)
 
