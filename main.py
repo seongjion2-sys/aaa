@@ -30,17 +30,18 @@ st.markdown(
         border-bottom: 2px solid var(--wiki-main);
         padding-bottom: 5px;
         display: flex;
-        align-items: baseline;
+        align-items: center;
         gap: 10px;
         flex-wrap: wrap;
     }
     .type-badge {
-        background-color: var(--wiki-main);
-        color: white;
-        padding: 3px 8px;
+        color: white !important;
+        padding: 4px 12px;
         border-radius: 12px;
-        font-size: 0.9rem;
-        font-weight: normal;
+        font-size: 0.95rem;
+        font-weight: bold;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        display: inline-block;
     }
     .section-title {
         color: var(--wiki-main);
@@ -150,31 +151,32 @@ st.markdown(
         padding: 3px 8px;
         margin: 2px;
         border-radius: 6px;
-        color: white;
+        color: white !important;
         font-weight: bold;
         font-size: 0.82rem;
         box-shadow: 0 1px 2px rgba(0,0,0,0.3);
     }
 
-    /* 포켓몬 공식 타입별 고유 색상 */
-    .bg-normal { background-color: #A8A878; }
-    .bg-fire { background-color: #F08030; }
-    .bg-water { background-color: #6890F0; }
-    .bg-grass { background-color: #78C850; }
-    .bg-electric { background-color: #F8D030; color: #000 !important; }
-    .bg-ice { background-color: #98D8D8; color: #000 !important; }
-    .bg-fighting { background-color: #C03028; }
-    .bg-poison { background-color: #A040A0; }
-    .bg-ground { background-color: #E0C068; color: #000 !important; }
-    .bg-flying { background-color: #A890F0; }
-    .bg-psychic { background-color: #F85888; }
-    .bg-bug { background-color: #A8B820; }
-    .bg-rock { background-color: #B8A038; }
-    .bg-ghost { background-color: #70559B; }
-    .bg-dragon { background-color: #7038F8; }
-    .bg-dark { background-color: #705848; }
-    .bg-steel { background-color: #B8B8D0; color: #000 !important; }
-    .bg-fairy { background-color: #EE99AC; color: #000 !important; }
+    /* 포켓몬 공식 타입별 고유 색상 CSS */
+    .bg-normal { background-color: #A8A878 !important; }
+    .bg-fire { background-color: #F08030 !important; }
+    .bg-water { background-color: #6890F0 !important; }
+    .bg-grass { background-color: #78C850 !important; }
+    .bg-electric { background-color: #F8D030 !important; color: #000 !important; }
+    .bg-ice { background-color: #98D8D8 !important; color: #000 !important; }
+    .bg-fighting { background-color: #C03028 !important; }
+    .bg-poison { background-color: #A040A0 !important; }
+    .bg-ground { background-color: #E0C068 !important; color: #000 !important; }
+    .bg-flying { background-color: #A890F0 !important; }
+    .bg-psychic { background-color: #F85888 !important; }
+    .bg-bug { background-color: #A8B820 !important; }
+    .bg-rock { background-color: #B8A038 !important; }
+    .bg-ghost { background-color: #70559B !important; }
+    .bg-dragon { background-color: #7038F8 !important; }
+    .bg-dark { background-color: #705848 !important; }
+    .bg-steel { background-color: #B8B8D0 !important; color: #000 !important; }
+    .bg-fairy { background-color: #EE99AC !important; color: #000 !important; }
+    .bg-unknown { background-color: #008275 !important; }
     </style>
 """,
     unsafe_allow_html=True,
@@ -211,7 +213,16 @@ TYPE_NAME_MAP = {
     "fairy": "페어리",
 }
 
+# 영문 타입 반대 매핑 (한글 -> 영문 CSS 클래스용)
+TYPE_EN_MAP = {v: k for k, v in TYPE_NAME_MAP.items()}
+
 ALL_TYPES = list(TYPE_NAME_MAP.keys())
+
+
+# 한글 타입 명칭으로 CSS 클래스 반환하는 함수
+def get_type_color_class(ko_type_name):
+  en_type = TYPE_EN_MAP.get(ko_type_name, "unknown")
+  return f"bg-{en_type}"
 
 
 # 방어 및 공격 상성 상세 계산 함수
@@ -456,7 +467,7 @@ def generate_hexagon_svg(stats):
     """
 
 
-# 특수 폼 체인지 목록을 가져오는 함수 (메가진화, 거다이맥스, 지우개굴닌자, 테라스탈)
+# 특수 폼 체인지 목록을 가져오는 함수
 @st.cache_data(ttl=86400)
 def get_special_forms(species_data, base_ko_name):
   special_forms = []
@@ -466,11 +477,9 @@ def get_special_forms(species_data, base_ko_name):
     is_default = v.get("is_default", False)
     v_name = v["pokemon"]["name"]
 
-    # 기본 폼 제외
     if is_default and "-mega" not in v_name:
       continue
 
-    # 메가진화, 거다이맥스, 지우개굴닌자 등 특수 폼 감지
     form_type = ""
     form_ko_title = ""
     form_desc = ""
@@ -534,7 +543,7 @@ def get_special_forms(species_data, base_ko_name):
       except Exception:
         pass
 
-  # 기본 테라스탈 형태 정보 추가 (9세대 테라스탈 공통 정보)
+  # 기본 테라스탈 형태 정보 추가 (상성 정보 제공 및 정보 안내)
   terastal_img = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tera-orb.png"
   special_forms.append({
       "type": "테라스탈",
@@ -745,9 +754,12 @@ if st.session_state.search_query:
         st.session_state.search_query = str(next_id)
         st.rerun()
 
-    type_badges_html = "".join(
-        [f"<span class='type-badge'>{t}</span>" for t in data["types"]]
-    )
+    # 포켓몬 이름 옆 타입 뱃지를 고유 색상으로 표시
+    type_badges_html = "".join([
+        f"<span class='type-badge"
+        f" {get_type_color_class(t)}'>{t}</span>"
+        for t in data["types"]
+    ])
 
     st.markdown(
         f"""
