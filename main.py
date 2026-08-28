@@ -114,24 +114,20 @@ st.markdown(
         font-weight: bold;
     }
 
-    /* 메인 메뉴 카드형 버튼 스타일 커스텀 */
-    div[data-testid="column"] .stButton > button {
-        background-color: #ffffff !important;
-        color: #222222 !important;
-        border: 2px solid #e0e0e0 !important;
-        border-radius: 14px !important;
-        padding: 30px 20px !important;
-        height: 190px !important;
-        width: 100% !important;
-        text-align: center !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
-        transition: all 0.2s ease-in-out !important;
-    }
-    div[data-testid="column"] .stButton > button:hover {
-        border-color: var(--wiki-main) !important;
-        background-color: #f8fbfb !important;
-        transform: translateY(-4px) !important;
-        box-shadow: 0 8px 15px rgba(0, 130, 117, 0.15) !important;
+    /* 메인 메뉴 하얀색 카드 스타일 */
+    .menu-card {
+        background-color: #ffffff;
+        color: #222222;
+        border: 2px solid #e0e0e0;
+        border-radius: 14px 14px 0 0;
+        padding: 30px 20px;
+        height: 190px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     .type-table {
@@ -744,33 +740,48 @@ if st.session_state.current_page == "메인":
   col1, col2, col3 = st.columns(3)
 
   with col1:
-    if st.button(
-        "📖\n\n포켓몬 도감\n\n전국 포켓몬들의 상세 정보, 종족치, 진화 및 타입 상성을"
-        " 확인하세요.",
-        key="btn_pokedex",
-        use_container_width=True,
-    ):
+    st.markdown(
+        """
+        <div class="menu-card">
+            <div style="font-size: 2.2rem; margin-bottom: 8px;">📖</div>
+            <div style="font-weight: bold; font-size: 1.2rem; color: #008275; margin-bottom: 6px;">포켓몬 도감</div>
+            <div style="font-size: 0.85rem; color: #666;">전국 포켓몬들의 상세 정보, 종족치, 진화 및 타입 상성을 확인하세요.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button("포켓몬 도감 이동하기", key="btn_pokedex", use_container_width=True):
       st.session_state.search_query = ""
       go_to_page("포켓몬 도감")
       st.rerun()
 
   with col2:
-    if st.button(
-        "👤\n\n인물 도감\n\n포켓몬 세계관의 주요 트레이너, 체육관 관장 및 챔피언"
-        " 정보를 확인하세요.",
-        key="btn_character",
-        use_container_width=True,
-    ):
+    st.markdown(
+        """
+        <div class="menu-card">
+            <div style="font-size: 2.2rem; margin-bottom: 8px;">👤</div>
+            <div style="font-weight: bold; font-size: 1.2rem; color: #008275; margin-bottom: 6px;">인물 도감</div>
+            <div style="font-size: 0.85rem; color: #666;">포켓몬 세계관의 주요 트레이너, 체육관 관장 및 챔피언 정보를 확인하세요.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button("인물 도감 이동하기", key="btn_character", use_container_width=True):
       go_to_page("인물 도감")
       st.rerun()
 
   with col3:
-    if st.button(
-        "🗺️\n\n맵 도감\n\n지방별 주요 필드, 도시, 도로 및 서식지 정보를"
-        " 탐색해보세요.",
-        key="btn_map",
-        use_container_width=True,
-    ):
+    st.markdown(
+        """
+        <div class="menu-card">
+            <div style="font-size: 2.2rem; margin-bottom: 8px;">🗺️</div>
+            <div style="font-weight: bold; font-size: 1.2rem; color: #008275; margin-bottom: 6px;">맵 도감</div>
+            <div style="font-size: 0.85rem; color: #666;">지방별 주요 필드, 도시, 도로 및 서식지 정보를 탐색해보세요.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button("맵 도감 이동하기", key="btn_map", use_container_width=True):
       go_to_page("맵 도감")
       st.rerun()
 
