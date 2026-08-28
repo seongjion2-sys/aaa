@@ -9,7 +9,7 @@ st.set_page_config(page_title="포켓몬 위키", page_icon="⚡", layout="wide"
 
 # Session State 초기화
 if "search_query" not in st.session_state:
-  st.session_state.search_query = "484"  # 기본값: No.484 (펄기아)
+  st.session_state.search_query = "670"  # 기본값: No.670 (플라엣테)
 
 
 # 검색어 업데이트 콜백
@@ -448,6 +448,7 @@ def get_special_forms(species_data, base_ko_name):
             "therian",
             "crowned",
             "hero",
+            "eternal",
         ]
     ):
       continue
@@ -484,10 +485,10 @@ def get_special_forms(species_data, base_ko_name):
       form_type = "해방된 폼"
       form_ko_title = f"{base_ko_name} (해방된 폼)"
       form_desc = "진짜 힘을 되찾아 거대해진 모습입니다."
-    elif "confined" in v_name:
-      form_type = "매듭의 폼"
-      form_ko_title = f"{base_ko_name} (매듭의 폼)"
-      form_desc = "작은 링에 봉인되어 있는 평소의 모습입니다."
+    elif "eternal" in v_name:
+      form_type = "영원의 꽃"
+      form_ko_title = f"{base_ko_name} (영원의 꽃)"
+      form_desc = "특별한 꽃을 품은 영원의 꽃 형태입니다."
     elif not is_default:
       form_type = "폼 체인지"
       form_ko_title = f"{base_ko_name} (변형)"
@@ -689,7 +690,7 @@ def get_pokemon_data(query):
 st.title("⚡ 포켓몬 나무위키")
 
 st.text_input(
-    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 개굴닌자, 펄기아, 그란돈, 후파)",
+    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 플라엣테, 펄기아, 후파)",
     value=st.session_state.search_query,
     key="user_input",
     on_change=update_search,
@@ -824,7 +825,7 @@ if st.session_state.search_query:
           unsafe_allow_html=True,
       )
 
-      # 탭 동적 생성: 기본 일반/이로치 탭에 특수 폼이 있다면 탭으로 추가
+      # 탭 동적 생성: 기본 일반/이로치 탭에 영원의 꽃 등의 특수 폼이 있다면 탭으로 추가
       form_tabs_labels = ["일반", "✨ 이로치"]
       for form in data["special_forms"]:
         form_tabs_labels.append(form["type"])
@@ -842,10 +843,9 @@ if st.session_state.search_query:
         else:
           st.write("이로치 이미지가 없습니다.")
 
-      # 3. 특수 폼 탭들
+      # 3. 특수 폼 탭들 (영원의 꽃 등)
       for idx, form in enumerate(data["special_forms"]):
         with form_tabs[2 + idx]:
-          # 특수 폼 내부에서도 일반/이로치를 볼 수 있게 서브 탭 구성
           sub_tab1, sub_tab2 = st.tabs(["일반", "✨ 이로치"])
           with sub_tab1:
             st.image(form["image"], use_container_width=True)
