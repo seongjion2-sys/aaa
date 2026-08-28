@@ -114,41 +114,24 @@ st.markdown(
         font-weight: bold;
     }
 
-    /* 커스텀 네비게이션 카드 스타일 */
-    .menu-card {
-        background-color: rgba(255, 255, 255, 0.03);
-        border: 2px solid #333333;
-        border-radius: 12px;
-        padding: 24px 16px;
-        text-align: center;
-        transition: all 0.2s ease-in-out;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+    /* 메인 메뉴 카드형 버튼 스타일 커스텀 */
+    div[data-testid="column"] .stButton > button {
+        background-color: #ffffff !important;
+        color: #222222 !important;
+        border: 2px solid #e0e0e0 !important;
+        border-radius: 14px !important;
+        padding: 30px 20px !important;
+        height: 190px !important;
+        width: 100% !important;
+        text-align: center !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+        transition: all 0.2s ease-in-out !important;
     }
-    .menu-card:hover {
-        border-color: var(--wiki-main);
-        background-color: rgba(0, 130, 117, 0.08);
-        transform: translateY(-3px);
-    }
-    .menu-icon {
-        font-size: 2.2rem;
-        margin-bottom: 12px;
-        color: #ffffff !important;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-    }
-    .menu-title {
-        font-size: 1.25rem;
-        font-weight: bold;
-        color: #ffffff !important;
-        margin-bottom: 8px;
-    }
-    .menu-desc {
-        font-size: 0.88rem;
-        color: #b0b0b0;
-        line-height: 1.4;
+    div[data-testid="column"] .stButton > button:hover {
+        border-color: var(--wiki-main) !important;
+        background-color: #f8fbfb !important;
+        transform: translateY(-4px) !important;
+        box-shadow: 0 8px 15px rgba(0, 130, 117, 0.15) !important;
     }
 
     .type-table {
@@ -761,58 +744,35 @@ if st.session_state.current_page == "메인":
   col1, col2, col3 = st.columns(3)
 
   with col1:
-    if st.button("포켓몬 도감 이동", key="btn_pokedex", use_container_width=True):
+    if st.button(
+        "📖\n\n포켓몬 도감\n\n전국 포켓몬들의 상세 정보, 종족치, 진화 및 타입 상성을"
+        " 확인하세요.",
+        key="btn_pokedex",
+        use_container_width=True,
+    ):
       st.session_state.search_query = ""
       go_to_page("포켓몬 도감")
       st.rerun()
-    st.markdown(
-        """
-        <div style="margin-top: -45px; pointer-events: none;">
-            <div class="menu-card">
-                <div class="menu-icon">📖</div>
-                <div class="menu-title">포켓몬 도감</div>
-                <div class="menu-desc">전국 포켓몬들의 상세 정보, 종족치, 진화 및 타입 상성을 확인하세요.</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
   with col2:
     if st.button(
-        "인물 도감 이동", key="btn_character", use_container_width=True
+        "👤\n\n인물 도감\n\n포켓몬 세계관의 주요 트레이너, 체육관 관장 및 챔피언"
+        " 정보를 확인하세요.",
+        key="btn_character",
+        use_container_width=True,
     ):
       go_to_page("인물 도감")
       st.rerun()
-    st.markdown(
-        """
-        <div style="margin-top: -45px; pointer-events: none;">
-            <div class="menu-card">
-                <div class="menu-icon">👤</div>
-                <div class="menu-title">인물 도감</div>
-                <div class="menu-desc">포켓몬 세계관의 주요 트레이너, 체육관 관장 및 챔피언 정보를 확인하세요.</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
   with col3:
-    if st.button("맵 도감 이동", key="btn_map", use_container_width=True):
+    if st.button(
+        "🗺️\n\n맵 도감\n\n지방별 주요 필드, 도시, 도로 및 서식지 정보를"
+        " 탐색해보세요.",
+        key="btn_map",
+        use_container_width=True,
+    ):
       go_to_page("맵 도감")
       st.rerun()
-    st.markdown(
-        """
-        <div style="margin-top: -45px; pointer-events: none;">
-            <div class="menu-card">
-                <div class="menu-icon">🗺️</div>
-                <div class="menu-title">맵 도감</div>
-                <div class="menu-desc">지방별 주요 필드, 도시, 도로 및 서식지 정보를 탐색해보세요.</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
   st.markdown("<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>", unsafe_allow_html=True)
 
