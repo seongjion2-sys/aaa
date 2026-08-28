@@ -10,10 +10,10 @@ st.set_page_config(page_title="포켓몬 위키", page_icon="⚡", layout="wide"
 
 # Session State 초기화
 if "search_query" not in st.session_state:
-  st.session_state.search_query = ""  # 초기 검색어를 빈 값으로 설정
+  st.session_state.search_query = ""
 
 if "current_page" not in st.session_state:
-  st.session_state.current_page = "메인"  # 기본 페이지: 메인 메뉴
+  st.session_state.current_page = "메인"
 
 
 # 페이지 이동 함수
@@ -112,6 +112,43 @@ st.markdown(
     .evo-name {
         font-size: 1.05rem;
         font-weight: bold;
+    }
+
+    /* 커스텀 네비게이션 카드 스타일 */
+    .menu-card {
+        background-color: rgba(255, 255, 255, 0.03);
+        border: 2px solid #333333;
+        border-radius: 12px;
+        padding: 24px 16px;
+        text-align: center;
+        transition: all 0.2s ease-in-out;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .menu-card:hover {
+        border-color: var(--wiki-main);
+        background-color: rgba(0, 130, 117, 0.08);
+        transform: translateY(-3px);
+    }
+    .menu-icon {
+        font-size: 2.2rem;
+        margin-bottom: 12px;
+        color: #ffffff !important;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+    .menu-title {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #ffffff !important;
+        margin-bottom: 8px;
+    }
+    .menu-desc {
+        font-size: 0.88rem;
+        color: #b0b0b0;
+        line-height: 1.4;
     }
 
     .type-table {
@@ -708,7 +745,7 @@ def get_featured_pokemon_image(query_name):
   return ""
 
 
-# 사이드바 네비게이션 (메인 메뉴만 남김)
+# 사이드바 네비게이션
 st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
   go_to_page("메인")
@@ -724,29 +761,58 @@ if st.session_state.current_page == "메인":
   col1, col2, col3 = st.columns(3)
 
   with col1:
-    if st.button(
-        "📖\n\n포켓몬 도감\n\n전국 포켓몬들의 상세 정보, 종족치, 진화 및 타입 상성을"
-        " 확인하세요.",
-        use_container_width=True,
-    ):
+    if st.button("포켓몬 도감 이동", key="btn_pokedex", use_container_width=True):
       st.session_state.search_query = ""
       go_to_page("포켓몬 도감")
+      st.rerun()
+    st.markdown(
+        """
+        <div style="margin-top: -45px; pointer-events: none;">
+            <div class="menu-card">
+                <div class="menu-icon">📖</div>
+                <div class="menu-title">포켓몬 도감</div>
+                <div class="menu-desc">전국 포켓몬들의 상세 정보, 종족치, 진화 및 타입 상성을 확인하세요.</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
   with col2:
     if st.button(
-        "👤\n\n인물 도감\n\n포켓몬 세계관의 주요 트레이너, 체육관 관장 및 챔피언 정보를"
-        " 확인하세요.",
-        use_container_width=True,
+        "인물 도감 이동", key="btn_character", use_container_width=True
     ):
       go_to_page("인물 도감")
+      st.rerun()
+    st.markdown(
+        """
+        <div style="margin-top: -45px; pointer-events: none;">
+            <div class="menu-card">
+                <div class="menu-icon">👤</div>
+                <div class="menu-title">인물 도감</div>
+                <div class="menu-desc">포켓몬 세계관의 주요 트레이너, 체육관 관장 및 챔피언 정보를 확인하세요.</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
   with col3:
-    if st.button(
-        "🗺️\n\n맵 도감\n\n지방별 주요 필드, 도시, 도로 및 서식지 정보를"
-        " 탐색해보세요.",
-        use_container_width=True,
-    ):
+    if st.button("맵 도감 이동", key="btn_map", use_container_width=True):
       go_to_page("맵 도감")
+      st.rerun()
+    st.markdown(
+        """
+        <div style="margin-top: -45px; pointer-events: none;">
+            <div class="menu-card">
+                <div class="menu-icon">🗺️</div>
+                <div class="menu-title">맵 도감</div>
+                <div class="menu-desc">지방별 주요 필드, 도시, 도로 및 서식지 정보를 탐색해보세요.</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
   st.markdown("<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>", unsafe_allow_html=True)
 
