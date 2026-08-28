@@ -57,10 +57,21 @@ st.markdown(
     .evo-card {
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        padding: 10px;
+        padding: 12px 8px;
         text-align: center;
         background-color: #f9f9f9;
         margin-bottom: 10px;
+    }
+    .evo-id {
+        font-size: 0.8rem;
+        color: #888;
+        margin-bottom: 4px;
+    }
+    .evo-name {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #333;
+        margin-top: 6px;
     }
     </style>
 """,
@@ -113,13 +124,14 @@ def translate_to_ko(text):
   return text
 
 
-# species URL로부터 한글 이름 및 이미지, ID 가져오기
+# species URL로부터 한글 이름, 도감 번호, 이미지 가져오기
 def get_pokemon_info_from_species_url(url):
   try:
     res = requests.get(url, timeout=3)
     if res.status_code == 200:
       data = res.json()
       p_id = data['id']
+      formatted_id = f'No.{str(p_id).zfill(4)}'
       ko_name = next(
           (n['name'] for n in data['names'] if n['language']['name'] == 'ko'),
           data['name'],
@@ -137,7 +149,12 @@ def get_pokemon_info_from_species_url(url):
             or p_data['sprites']['front_default']
         )
 
-      return {'id': p_id, 'name': ko_name, 'image': img_url}
+      return {
+          'id': p_id,
+          'formatted_id': formatted_id,
+          'name': ko_name,
+          'image': img_url,
+      }
   except Exception:
     pass
   return None
@@ -339,7 +356,7 @@ def get_pokemon_data(query):
       stats_dict[s_name] = s_val
       total_stats += s_val
 
-    # 진화 상세 정보 (이름 + 이미지)
+    # 진화 상세 정보 (이름 + 도감 번호 + 이미지)
     prev_evos_info = []
     next_evos_info = []
 
@@ -393,7 +410,7 @@ def get_pokemon_data(query):
 st.title('⚡ 포켓몬 나무위키')
 search_query = st.text_input(
     '포켓몬 이름 또는 도감 번호를 입력하세요 (예: 파이리, 리자드, 리자몽, 이브이)',
-    value='파이리',
+    value='리자드',
 )
 
 if search_query:
@@ -401,7 +418,6 @@ if search_query:
     data = get_pokemon_data(search_query)
 
   if data:
-    # 1. 포켓몬 이름 옆에 타입 배지 표시
     type_badges_html = ''.join(
         [f"<span class='type-badge'>{t}</span>" for t in data['types']]
     )
@@ -451,7 +467,7 @@ if search_query:
 
       st.write(f"**종족치 총합:** `{data['total_stats']}`")
 
-      # 2. '4. 진화' 섹션 추가 (이전/다음 진화체가 있을 때만 출력)
+      # '4. 진화' 섹션 (도감 번호 + 이미지 + 이름 카드 구성)
       if data['prev_evos'] or data['next_evos']:
         st.markdown(
             "<h3 class='section-title'>4. 진화</h3>", unsafe_allow_html=True
@@ -465,8 +481,9 @@ if search_query:
               st.markdown(
                   f"""
                                 <div class='evo-card'>
+                                    <div class='evo-id'>{evo['formatted_id']}</div>
                                     <img src='{evo['image']}' style='width: 100%; max-width: 120px;'>
-                                    <p style='margin-top: 5px; font-weight: bold;'>{evo['name']}</p>
+                                    <div class='evo-name'>{evo['name']}</div>
                                 </div>
                             """,
                   unsafe_allow_html=True,
@@ -480,8 +497,9 @@ if search_query:
               st.markdown(
                   f"""
                                 <div class='evo-card'>
+                                    <div class='evo-id'>{evo['formatted_id']}</div>
                                     <img src='{evo['image']}' style='width: 100%; max-width: 120px;'>
-                                    <p style='margin-top: 5px; font-weight: bold;'>{evo['name']}</p>
+                                    <div class='evo-name'>{evo['name']}</div>
                                 </div>
                             """,
                   unsafe_allow_html=True,
@@ -498,7 +516,6 @@ if search_query:
       )
       st.image(data['image'], use_container_width=True)
 
-      # 오른쪽에 남아있는 정보 (타입 항목 제거됨)
       st.table({
           '속성': [
               '전국도감 번호',
