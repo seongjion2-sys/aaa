@@ -467,7 +467,7 @@ def generate_hexagon_svg(stats):
     """
 
 
-# 특수 폼 체인지 목록을 가져오는 함수
+# 특수 폼 체인지 목록을 가져오는 함수 (테라스탈 제외)
 @st.cache_data(ttl=86400)
 def get_special_forms(species_data, base_ko_name):
   special_forms = []
@@ -542,20 +542,6 @@ def get_special_forms(species_data, base_ko_name):
           })
       except Exception:
         pass
-
-  # 기본 테라스탈 형태 정보 추가 (상성 정보 제공 및 정보 안내)
-  terastal_img = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tera-orb.png"
-  special_forms.append({
-      "type": "테라스탈",
-      "title": f"테라스탈 {base_ko_name}",
-      "image": terastal_img,
-      "types": ["타입 변경 가능"],
-      "raw_types": [],
-      "desc": (
-          "팔데아지방의 현상으로, 테라스탈주얼이 발광하며 기술의 타입을"
-          " 강화하거나 포켓몬의 타입을 변환시킵니다."
-      ),
-  })
 
   return special_forms
 
@@ -851,12 +837,11 @@ if st.session_state.search_query:
       )
 
       # 6. 특수 폼 체인지 & 변형
-      st.markdown(
-          "<h3 class='section-title'>6. 특수 폼 체인지 & 변형</h3>",
-          unsafe_allow_html=True,
-      )
-
       if data["special_forms"]:
+        st.markdown(
+            "<h3 class='section-title'>6. 특수 폼 체인지 & 변형</h3>",
+            unsafe_allow_html=True,
+        )
         form_cols = st.columns(min(len(data["special_forms"]), 3))
         for idx, form in enumerate(data["special_forms"]):
           with form_cols[idx % 3]:
