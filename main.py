@@ -669,7 +669,7 @@ def search_pokemon_id_by_name(query_name):
   return None
 
 
-@st.cache_data
+@st.cache_data(ttl=86400)
 def get_pokemon_data(query):
   query = str(query).strip()
   target_id = (
@@ -812,7 +812,11 @@ st.text_input(
 if st.session_state.search_query:
   query_text = str(st.session_state.search_query).strip()
 
-  with st.spinner("⚡ 포켓몬 상세 정보 불러오는 중..."):
+  # 로딩 스피너 부활
+  with st.spinner(
+      f"⚡ '{query_text}' 포켓몬 정보를 불러오는 중입니다. 잠시만"
+      " 기다려주세요..."
+  ):
     data = get_pokemon_data(query_text)
 
   if data:
