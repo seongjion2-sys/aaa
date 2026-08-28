@@ -48,7 +48,6 @@ def add_search_history(query):
     if query in st.session_state.search_history:
       st.session_state.search_history.remove(query)
     st.session_state.search_history.insert(0, query)
-    # 최대 10개까지만 유지
     if len(st.session_state.search_history) > 10:
       st.session_state.search_history.pop()
 
@@ -58,7 +57,6 @@ def update_search():
   query = st.session_state.user_input
   st.session_state.search_query = query
   st.session_state.current_page = "포켓몬 도감"
-  st.session_state.selected_gen = None
   if query.strip():
     add_search_history(query)
 
@@ -608,100 +606,27 @@ def get_special_forms(species_data, base_ko_name, species_name):
     except Exception:
       pass
 
-  if species_name == "tauros":
-    breed_forms = [
-        (
-            f"{species_name}-paldea-combat-breed",
-            "컴뱃폼",
-            f"{base_ko_name} (컴뱃종)",
-            "격투 타입의 힘을 지닌 팔데아 켄타로스의 기본 품종입니다.",
-        ),
-        (
-            f"{species_name}-paldea-blaze-breed",
-            "블레이즈폼",
-            f"{base_ko_name} (블레이즈종)",
-            "화난 듯한 붉은 털과 불꽃/격투 타입을 지닌 팔데아 켄타로스입니다.",
-        ),
-        (
-            f"{species_name}-paldea-aqua-breed",
-            "아쿠아폼",
-            f"{base_ko_name} (아쿠아종)",
-            "물결 같은 뿔과 물/격투 타입을 지닌 팔데아 켄타로스입니다.",
-        ),
-    ]
-    for b_slug, b_type, b_title, b_desc in breed_forms:
-      try:
-        p_res = requests.get(
-            f"https://pokeapi.co/api/v2/pokemon/{b_slug}", timeout=2
-        )
-        if p_res.status_code == 200:
-          p_data = p_res.json()
-          img_url = (
-              p_data["sprites"]["other"]["official-artwork"]["front_default"]
-              or p_data["sprites"]["front_default"]
-          )
-          shiny_img_url = (
-              p_data["sprites"]["other"]["official-artwork"]["front_shiny"]
-              or p_data["sprites"]["shiny_default"]
-          )
-
-          types_raw = [t["type"]["name"] for t in p_data["types"]]
-          types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
-          def_eff, atk_eff = calculate_type_effectiveness(types_raw)
-
-          stats_dict = {}
-          total_stats = 0
-          for s in p_data["stats"]:
-            s_name = STAT_NAME_MAP.get(s["stat"]["name"], s["stat"]["name"])
-            s_val = s["base_stat"]
-            stats_dict[s_name] = s_val
-            total_stats += s_val
-
-          special_forms.append({
-              "type": b_type,
-              "title": b_title,
-              "image": img_url,
-              "shiny_image": shiny_img_url,
-              "types": types_ko,
-              "raw_types": types_raw,
-              "def_effectiveness": def_eff,
-              "atk_effectiveness": atk_eff,
-              "stats": stats_dict,
-              "total_stats": total_stats,
-              "height": p_data["height"] / 10,
-              "weight": p_data["weight"] / 10,
-              "desc": b_desc,
-          })
-      except Exception:
-        pass
-
   return special_forms
 
 
+# 현재 선택된 세대 범위 내에서만 이름/번호로 ID를 찾는 함수
 @st.cache_data(ttl=86400)
-def search_pokemon_id_by_name(query_name):
+def search_pokemon_id_in_generation(query_name, start_id, end_id):
   query_name = query_name.strip().lower()
 
-  try:
-    res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon-species/{query_name}", timeout=2
-    )
-    if res.status_code == 200:
-      return res.json()["id"]
-  except Exception:
-    pass
+  # 숫자로 검색한 경우 범위 내에 있는지 확인
+  if query_name.isdigit():
+    num = int(query_name)
+    if start_id <= num <= end_id:
+      return num
+    return None
 
+  # 이름으로 검색한 경우 해당 세대 범위 안에서만 탐색
   try:
-    list_res = requests.get(
-        "https://pokeapi.co/api/v2/pokemon-species?limit=1025", timeout=4
-    )
-    if list_res.status_code == 200:
-      results = list_res.json().get("results", [])
-      for idx, item in enumerate(results):
-        p_id = idx + 1
-        ko_name = get_pokemon_name_by_id(p_id)
-        if ko_name and query_name in ko_name.lower():
-          return p_id
+    for p_id in range(start_id, end_id + 1):
+      ko_name = get_pokemon_name_by_id(p_id)
+      if ko_name and query_name in ko_name.lower():
+        return p_id
   except Exception:
     pass
 
@@ -709,12 +634,7 @@ def search_pokemon_id_by_name(query_name):
 
 
 @st.cache_data(ttl=86400)
-def get_pokemon_data(query):
-  query = str(query).strip()
-  target_id = (
-      int(query) if query.isdigit() else search_pokemon_id_by_name(query)
-  )
-
+def get_pokemon_data(target_id):
   if not target_id:
     return None
 
@@ -836,20 +756,24 @@ def get_pokemon_data(query):
 
 @st.cache_data(ttl=86400)
 def get_featured_pokemon_image(query_name):
-  target_id = search_pokemon_id_by_name(query_name)
-  if target_id:
-    try:
-      res = requests.get(
-          f"https://pokeapi.co/api/v2/pokemon/{target_id}", timeout=2
+  try:
+    res = requests.get(
+        f"https://pokeapi.co/api/v2/pokemon-species/{query_name.lower()}",
+        timeout=2,
+    )
+    if res.status_code == 200:
+      p_id = res.json()["id"]
+      p_res = requests.get(
+          f"https://pokeapi.co/api/v2/pokemon/{p_id}", timeout=2
       )
-      if res.status_code == 200:
-        p_data = res.json()
+      if p_res.status_code == 200:
+        p_data = p_res.json()
         return (
             p_data["sprites"]["other"]["official-artwork"]["front_default"]
             or p_data["sprites"]["front_default"]
         )
-    except Exception:
-      pass
+  except Exception:
+    pass
   return ""
 
 
@@ -858,7 +782,6 @@ st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
   go_to_page("Main")
 
-# 사이드바에 검색 기록 표시
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🕒 최근 검색 기록")
 if st.session_state.search_history:
@@ -867,9 +790,10 @@ if st.session_state.search_history:
     st.rerun()
 
   for h_item in st.session_state.search_history:
-    if st.sidebar.button(f"🔍 {h_item}", key=f"side_hist_{h_item}", use_container_width=True):
+    if st.sidebar.button(
+        f"🔍 {h_item}", key=f"side_hist_{h_item}", use_container_width=True
+    ):
       st.session_state.search_query = h_item
-      st.session_state.selected_gen = None
       go_to_page("포켓몬 도감")
       st.rerun()
 else:
@@ -894,7 +818,9 @@ if st.session_state.current_page == "Main":
         """,
         unsafe_allow_html=True,
     )
-    if st.button("포켓몬 도감 이동하기", key="btn_pokedex", use_container_width=True):
+    if st.button(
+        "포켓몬 도감 이동하기", key="btn_pokedex", use_container_width=True
+    ):
       go_to_page("포켓몬 도감")
       st.rerun()
 
@@ -909,7 +835,9 @@ if st.session_state.current_page == "Main":
         """,
         unsafe_allow_html=True,
     )
-    if st.button("인물 도감 이동하기", key="btn_character", use_container_width=True):
+    if st.button(
+        "인물 도감 이동하기", key="btn_character", use_container_width=True
+    ):
       go_to_page("인물 도감")
       st.rerun()
 
@@ -928,15 +856,11 @@ if st.session_state.current_page == "Main":
       go_to_page("맵 도감")
       st.rerun()
 
-  st.markdown("<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>", unsafe_allow_html=True)
-  featured_pokemons = [
-      "켄타로스",
-      "식스테일",
-      "가디",
-      "슬리프",
-      "나무지기",
-      "루브도",
-  ]
+  st.markdown(
+      "<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>",
+      unsafe_allow_html=True,
+  )
+  featured_pokemons = ["켄타로스", "식스테일", "가디", "슬리프", "나무지기", "루브도"]
   f_cols = st.columns(6)
   for idx, p_name in enumerate(featured_pokemons):
     img_url = get_featured_pokemon_image(p_name)
@@ -960,32 +884,11 @@ if st.session_state.current_page == "Main":
 elif st.session_state.current_page == "포켓몬 도감":
   st.title("📖 포켓몬 도감")
 
-  st.write(
-      "**포켓몬 이름 또는 도감 번호를 입력하거나, 아래에서 세대별 배너를"
-      " 선택하세요.**"
-  )
-  st.text_input(
-      "포켓몬 검색",
-      value=st.session_state.search_query,
-      key="user_input",
-      on_change=update_search,
-      label_visibility="collapsed",
-      placeholder="포켓몬 이름 또는 도감 번호 입력...",
-  )
-
-  # 최근 검색 기록 칩 표시 영역
-  if st.session_state.search_history:
-    st.markdown("**최근 검색:**")
-    hist_cols = st.columns(min(len(st.session_state.search_history), 8))
-    for i, h_term in enumerate(st.session_state.search_history[:8]):
-      with hist_cols[i]:
-        if st.button(f"📌 {h_term}", key=f"chip_hist_{i}", use_container_width=True):
-          st.session_state.search_query = h_term
-          st.session_state.selected_gen = None
-          st.rerun()
-
-  # 검색어가 없고 선택된 세대도 없으면 9개 세대 배너 표시
-  if not st.session_state.search_query.strip() and not st.session_state.selected_gen:
+  # 1. 세대 선택 화면 (선택된 세대가 없을 때)
+  if not st.session_state.selected_gen:
+    st.write(
+        "**원하시는 세대 도감을 선택하여 해당 세대 포켓몬만 탐색 및 검색하세요.**"
+    )
     st.markdown(
         "<h3 class='section-title'>📦 세대별 도감 선택</h3>", unsafe_allow_html=True
     )
@@ -1010,212 +913,278 @@ elif st.session_state.current_page == "포켓몬 도감":
                 unsafe_allow_html=True,
             )
             if st.button(
-                f"{g_name} 보기", key=f"gen_btn_{idx}", use_container_width=True
+                f"{g_name} 도감 입장",
+                key=f"gen_btn_{idx}",
+                use_container_width=True,
             ):
               st.session_state.selected_gen = g_name
+              st.session_state.search_query = ""
               st.rerun()
 
-  # 세대가 선택된 경우 해당 세대의 포켓몬 목록 표시
-  elif st.session_state.selected_gen and not st.session_state.search_query.strip():
-    g_name = st.session_state.selected_gen
-    start, end = GENERATIONS[g_name]["range"]
-
-    if st.button("◀ 세대 선택 화면으로 돌아가기"):
-      st.session_state.selected_gen = None
-      st.rerun()
-
-    st.markdown(f"<h3 class='section-title'>⚡ {g_name} 목록</h3>", unsafe_allow_html=True)
-    st.write(f"No.{start} ~ No.{end} 포켓몬을 선택하세요.")
-
-    poke_cols = st.columns(3)
-    for p_id in range(start, end + 1):
-      p_name = get_pokemon_name_by_id(p_id)
-      col_idx = (p_id - start) % 3
-      with poke_cols[col_idx]:
-        if st.button(
-            f"No.{str(p_id).zfill(4)} {p_name}",
-            key=f"poke_list_{p_id}",
-            use_container_width=True,
-        ):
-          st.session_state.search_query = str(p_id)
-          add_search_history(p_name)
-          st.rerun()
-
+  # 2. 특정 세대 도감 내부 화면 (선택된 세대가 있을 때)
   else:
-    if st.button("◀ 도감 메인/세대 선택으로 돌아가기"):
-      st.session_state.search_query = ""
-      st.session_state.selected_gen = None
-      st.rerun()
+    g_name = st.session_state.selected_gen
+    start_id, end_id = GENERATIONS[g_name]["range"]
+
+    col_back, col_title = st.columns([1, 4])
+    with col_back:
+      if st.button("◀ 세대 목록으로", use_container_width=True):
+        st.session_state.selected_gen = None
+        st.session_state.search_query = ""
+        st.rerun()
+    with col_title:
+      st.markdown(
+          f"### ⚡ {g_name} 도감 (No.{start_id} ~ No.{end_id})"
+      )
+
+    # 해당 세대 범위 내에서만 검색 가능한 입력창
+    st.text_input(
+        f"{g_name} 포켓몬 검색",
+        value=st.session_state.search_query,
+        key="user_input",
+        on_change=update_search,
+        placeholder=(
+            f"{g_name} 범위 내 이름 또는 번호 입력 (No.{start_id}~{end_id})..."
+        ),
+    )
+
+    # 최근 검색 기록 칩 표시 (현재 세대 범위 내 결과만 필터링하거나 안내)
+    if st.session_state.search_history:
+      st.markdown("**최근 검색:**")
+      hist_cols = st.columns(min(len(st.session_state.search_history), 8))
+      for i, h_term in enumerate(st.session_state.search_history[:8]):
+        with hist_cols[i]:
+          if st.button(
+              f"📌 {h_term}", key=f"chip_hist_{i}", use_container_width=True
+          ):
+            # 기록을 클릭했을 때도 현재 세대 범위 안의 포켓몬인지 검증
+            target_id = search_pokemon_id_in_generation(
+                h_term, start_id, end_id
+            )
+            if target_id:
+              st.session_state.search_query = h_term
+              st.rerun()
+            else:
+              st.warning(
+                  f"'{h_term}'은(는) {g_name} 도감(No.{start_id}~{end_id})"
+                  " 범위에 없습니다."
+              )
 
     query_text = str(st.session_state.search_query).strip()
-    data = get_pokemon_data(query_text)
 
-    if data:
-      current_id = data["id"]
-      prev_id, next_id = max(1, current_id - 1), min(1025, current_id + 1)
-      prev_name = get_pokemon_name_by_id(prev_id) if current_id > 1 else ""
-      next_name = get_pokemon_name_by_id(next_id) if current_id < 1025 else ""
-
-      btn_col1, btn_col2, _ = st.columns([1, 1, 2])
-      with btn_col1:
-        if current_id > 1 and st.button(
-            f"◀ 이전: {prev_name} (No.{str(prev_id).zfill(4)})",
-            use_container_width=True,
-        ):
-          st.session_state.search_query = str(prev_id)
-          add_search_history(prev_name)
-          st.rerun()
-
-      with btn_col2:
-        if current_id < 1025 and st.button(
-            f"다음: {next_name} (No.{str(next_id).zfill(4)}) ▶",
-            use_container_width=True,
-        ):
-          st.session_state.search_query = str(next_id)
-          add_search_history(next_name)
-          st.rerun()
-
+    # 검색어가 없는 경우: 해당 세대 전체 목록을 버튼 격자로 보여줌
+    if not query_text:
       st.markdown(
-          f"""
-          <h1 class='main-title'>
-              {data['name']}
-              <small style='font-size:1rem; color:#666;'>| {data['english_name']} ({data['formatted_id']})</small>
-          </h1>
-          """,
+          f"<h5 style='color: #008275; margin-top:20px;'>포켓몬을 선택하거나"
+          " 위 검색창에 이름을 입력하세요.</h5>",
           unsafe_allow_html=True,
       )
 
-      form_tab_titles = [f["type"] for f in data["forms"]]
-      form_tabs = st.tabs(form_tab_titles)
+      poke_cols = st.columns(3)
+      for p_id in range(start_id, end_id + 1):
+        p_name = get_pokemon_name_by_id(p_id)
+        col_idx = (p_id - start_id) % 3
+        with poke_cols[col_idx]:
+          if st.button(
+              f"No.{str(p_id).zfill(4)} {p_name}",
+              key=f"poke_list_{p_id}",
+              use_container_width=True,
+          ):
+            st.session_state.search_query = str(p_id)
+            add_search_history(p_name)
+            st.rerun()
 
-      for tab_idx, form_info in enumerate(data["forms"]):
-        with form_tabs[tab_idx]:
-          type_badges_html = "".join([
-              f"<span class='type-badge"
-              f" {get_type_color_class(t)}'>{t}</span>"
-              for t in form_info["types"]
-          ])
+    # 검색어가 있는 경우: 해당 세대 범위 내에서만 검색 수행
+    else:
+      target_id = search_pokemon_id_in_generation(
+          query_text, start_id, end_id
+      )
+
+      if target_id and start_id <= target_id <= end_id:
+        data = get_pokemon_data(target_id)
+        if data:
+          current_id = data["id"]
+          # 세대 범위 내에서의 이전/다음 이동
+          prev_id = (
+              max(start_id, current_id - 1) if current_id > start_id else None
+          )
+          next_id = (
+              min(end_id, current_id + 1) if current_id < end_id else None
+          )
+
+          prev_name = get_pokemon_name_by_id(prev_id) if prev_id else ""
+          next_name = get_pokemon_name_by_id(next_id) if next_id else ""
+
+          btn_col1, btn_col2, _ = st.columns([1, 1, 2])
+          with btn_col1:
+            if prev_id and st.button(
+                f"◀ 이전: {prev_name} (No.{str(prev_id).zfill(4)})",
+                use_container_width=True,
+            ):
+              st.session_state.search_query = str(prev_id)
+              add_search_history(prev_name)
+              st.rerun()
+
+          with btn_col2:
+            if next_id and st.button(
+                f"다음: {next_name} (No.{str(next_id).zfill(4)}) ▶",
+                use_container_width=True,
+            ):
+              st.session_state.search_query = str(next_id)
+              add_search_history(next_name)
+              st.rerun()
+
           st.markdown(
-              f"### {form_info['title']} {type_badges_html}",
+              f"""
+              <h1 class='main-title'>
+                  {data['name']}
+                  <small style='font-size:1rem; color:#666;'>| {data['english_name']} ({data['formatted_id']})</small>
+              </h1>
+              """,
               unsafe_allow_html=True,
           )
 
-          col1, col2 = st.columns([1.8, 1.2])
+          form_tab_titles = [f["type"] for f in data["forms"]]
+          form_tabs = st.tabs(form_tab_titles)
 
-          with col1:
-            st.markdown(
-                "<h3 class='section-title'>1. 개요 및 도감 설명</h3>",
-                unsafe_allow_html=True,
-            )
-            st.info(form_info["desc"])
-
-            st.markdown(
-                "<h3 class='section-title'>2. 육각형 종족치 그래프</h3>",
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                generate_hexagon_svg(form_info["stats"]), unsafe_allow_html=True
-            )
-
-            stat_cols = st.columns(3)
-            for idx, (stat_name, stat_val) in enumerate(
-                form_info["stats"].items()
-            ):
-              with stat_cols[idx % 3]:
-                st.metric(label=stat_name, value=stat_val)
-
-            st.write(f"**종족치 총합:** `{form_info['total_stats']}`")
-
-            if tab_idx == 0 and (data["prev_evos"] or data["next_evos"]):
+          for tab_idx, form_info in enumerate(data["forms"]):
+            with form_tabs[tab_idx]:
+              type_badges_html = "".join([
+                  f"<span class='type-badge"
+                  f" {get_type_color_class(t)}'>{t}</span>"
+                  for t in form_info["types"]
+              ])
               st.markdown(
-                  "<h3 class='section-title'>3. 진화</h3>",
+                  f"### {form_info['title']} {type_badges_html}",
                   unsafe_allow_html=True,
               )
-              if data["prev_evos"]:
-                st.write("**이전 진화 형태**")
-                cols = st.columns(min(len(data["prev_evos"]), 3))
-                for i, evo in enumerate(data["prev_evos"]):
-                  with cols[i % 3]:
-                    st.markdown(
-                        f"<div class='evo-card'><img"
-                        f" src='{evo['image']}'><div"
-                        " class='evo-info'><div"
-                        f" class='evo-id'>{evo['formatted_id']}</div><div"
-                        f" class='evo-name'>{evo['name']}</div></div></div>",
-                        unsafe_allow_html=True,
+
+              col1, col2 = st.columns([1.8, 1.2])
+
+              with col1:
+                st.markdown(
+                    "<h3 class='section-title'>1. 개요 및 도감 설명</h3>",
+                    unsafe_allow_html=True,
+                )
+                st.info(form_info["desc"])
+
+                st.markdown(
+                    "<h3 class='section-title'>2. 육각형 종족치 그래프</h3>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    generate_hexagon_svg(form_info["stats"]),
+                    unsafe_allow_html=True,
+                )
+
+                stat_cols = st.columns(3)
+                for idx, (stat_name, stat_val) in enumerate(
+                    form_info["stats"].items()
+                ):
+                  with stat_cols[idx % 3]:
+                    st.metric(label=stat_name, value=stat_val)
+
+                st.write(f"**종족치 총합:** `{form_info['total_stats']}`")
+
+                if tab_idx == 0 and (data["prev_evos"] or data["next_evos"]):
+                  st.markdown(
+                      "<h3 class='section-title'>3. 진화</h3>",
+                      unsafe_allow_html=True,
+                  )
+                  if data["prev_evos"]:
+                    st.write("**이전 진화 형태**")
+                    cols = st.columns(min(len(data["prev_evos"]), 3))
+                    for i, evo in enumerate(data["prev_evos"]):
+                      with cols[i % 3]:
+                        st.markdown(
+                            f"<div class='evo-card'><img"
+                            f" src='{evo['image']}'><div"
+                            " class='evo-info'><div"
+                            f" class='evo-id'>{evo['formatted_id']}</div><div"
+                            f" class='evo-name'>{evo['name']}</div></div></div>",
+                            unsafe_allow_html=True,
+                        )
+                  if data["next_evos"]:
+                    st.write("**다음 진화 형태**")
+                    cols = st.columns(min(len(data["next_evos"]), 3))
+                    for i, evo in enumerate(data["next_evos"]):
+                      with cols[i % 3]:
+                        st.markdown(
+                            f"<div class='evo-card'><img"
+                            f" src='{evo['image']}'><div"
+                            " class='evo-info'><div"
+                            f" class='evo-id'>{evo['formatted_id']}</div><div"
+                            f" class='evo-name'>{evo['name']}</div></div></div>",
+                            unsafe_allow_html=True,
+                        )
+
+                st.markdown(
+                    "<h3 class='section-title'>4. 타입 상성</h3>",
+                    unsafe_allow_html=True,
+                )
+                st.write(
+                    "##### **[공격 상성]** (자신의 타입 기술로 공격 시 배율)"
+                )
+                st.markdown(
+                    render_type_table(
+                        form_info["atk_effectiveness"], is_defense=False
+                    ),
+                    unsafe_allow_html=True,
+                )
+
+                st.write(
+                    "##### **[방어 상성]** (상대 타입 기술로 공격받을 때 배율)"
+                )
+                st.markdown(
+                    render_type_table(
+                        form_info["def_effectiveness"], is_defense=True
+                    ),
+                    unsafe_allow_html=True,
+                )
+
+              with col2:
+                st.markdown(
+                    f"<div class='infobox'><div"
+                    f" class='infobox-title'>{form_info['title']}</div></div>",
+                    unsafe_allow_html=TypeResponseError := True
+                    if False
+                    else True,
+                )
+
+                sub_tab1, sub_tab2 = st.tabs(["일반", "✨ 이로치"])
+                with sub_tab1:
+                  st.image(form_info["image"], use_container_width=True)
+                with sub_tab2:
+                  if form_info["shiny_image"]:
+                    st.image(
+                        form_info["shiny_image"], use_container_width=True
                     )
-              if data["next_evos"]:
-                st.write("**다음 진화 형태**")
-                cols = st.columns(min(len(data["next_evos"]), 3))
-                for i, evo in enumerate(data["next_evos"]):
-                  with cols[i % 3]:
-                    st.markdown(
-                        f"<div class='evo-card'><img"
-                        f" src='{evo['image']}'><div"
-                        " class='evo-info'><div"
-                        f" class='evo-id'>{evo['formatted_id']}</div><div"
-                        f" class='evo-name'>{evo['name']}</div></div></div>",
-                        unsafe_allow_html=True,
-                    )
+                  else:
+                    st.write("이로치 이미지가 없습니다.")
 
-            st.markdown(
-                "<h3 class='section-title'>4. 타입 상성</h3>",
-                unsafe_allow_html=True,
-            )
-            st.write("##### **[공격 상성]** (자신의 타입 기술로 공격 시 배율)")
-            st.markdown(
-                render_type_table(
-                    form_info["atk_effectiveness"], is_defense=False
-                ),
-                unsafe_allow_html=True,
-            )
-
-            st.write("##### **[방어 상성]** (상대 타입 기술로 공격받을 때 배율)")
-            st.markdown(
-                render_type_table(
-                    form_info["def_effectiveness"], is_defense=True
-                ),
-                unsafe_allow_html=True,
-            )
-
-          with col2:
-            st.markdown(
-                f"<div class='infobox'><div"
-                f" class='infobox-title'>{form_info['title']}</div></div>",
-                unsafe_allow_html=True,
-            )
-
-            sub_tab1, sub_tab2 = st.tabs(["일반", "✨ 이로치"])
-            with sub_tab1:
-              st.image(form_info["image"], use_container_width=True)
-            with sub_tab2:
-              if form_info["shiny_image"]:
-                st.image(form_info["shiny_image"], use_container_width=True)
-              else:
-                st.write("이로치 이미지가 없습니다.")
-
-            st.table({
-                "속성": [
-                    "전국도감 번호",
-                    "분류",
-                    "세대",
-                    "신장",
-                    "체중",
-                    "포획률",
-                ],
-                "정보": [
-                    data["formatted_id"],
-                    data["genus"],
-                    data["generation"],
-                    f"{form_info['height']} m",
-                    f"{form_info['weight']} kg",
-                    f"{data['capture_rate']}",
-                ],
-            })
-    else:
-      st.error(
-          f"'{st.session_state.search_query}' 포켓몬 정보를 찾을 수 없습니다."
-      )
+                st.table({
+                    "속성": [
+                        "전국도감 번호",
+                        "분류",
+                        "세대",
+                        "신장",
+                        "체중",
+                        "포획률",
+                    ],
+                    "정보": [
+                        data["formatted_id"],
+                        data["genus"],
+                        data["generation"],
+                        f"{form_info['height']} m",
+                        f"{form_info['weight']} kg",
+                        f"{data['capture_rate']}",
+                    ],
+                })
+      else:
+        st.error(
+            f"'{query_text}'은(는) {g_name} 도감(No.{start_id} ~ No.{end_id})"
+            " 범위 내에서 찾을 수 없습니다."
+        )
 
 elif st.session_state.current_page == "인물 도감":
   st.title("👤 인물 도감")
