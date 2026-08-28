@@ -1,5 +1,6 @@
 import json
 import math
+import time
 import urllib.parse
 import requests
 import streamlit as st
@@ -97,7 +98,6 @@ st.markdown(
         font-weight: bold;
     }
 
-    /* 버전별 도감 설명 테이블 스타일 */
     .dex-table {
         width: 100%;
         border-collapse: collapse;
@@ -123,7 +123,6 @@ st.markdown(
         width: 75%;
     }
 
-    /* 상성 표 스타일 */
     .type-table {
         width: 100%;
         border-collapse: collapse;
@@ -156,7 +155,6 @@ st.markdown(
         box-shadow: 0 1px 2px rgba(0,0,0,0.3);
     }
 
-    /* 타입별 고유 색상 CSS */
     .bg-normal { background-color: #A8A878 !important; }
     .bg-fire { background-color: #F08030 !important; }
     .bg-water { background-color: #6890F0 !important; }
@@ -268,7 +266,7 @@ def calculate_type_effectiveness(raw_types):
   for t_name in raw_types:
     try:
       res = requests.get(
-          f"https://pokeapi.co/api/v2/type/{t_name}", timeout=3
+          f"https://pokeapi.co/api/v2/type/{t_name}", timeout=2
       )
       if res.status_code == 200:
         rel = res.json()["damage_relations"]
@@ -290,7 +288,7 @@ def calculate_type_effectiveness(raw_types):
   for t_name in raw_types:
     try:
       res = requests.get(
-          f"https://pokeapi.co/api/v2/type/{t_name}", timeout=3
+          f"https://pokeapi.co/api/v2/type/{t_name}", timeout=2
       )
       if res.status_code == 200:
         rel = res.json()["damage_relations"]
@@ -356,7 +354,7 @@ def translate_to_ko(text):
   try:
     encoded_text = urllib.parse.quote(text)
     url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q={encoded_text}"
-    res = requests.get(url, timeout=3)
+    res = requests.get(url, timeout=2)
     if res.status_code == 200:
       data = res.json()
       return "".join([item[0] for item in data[0] if item[0]])
@@ -369,7 +367,7 @@ def translate_to_ko(text):
 def get_pokemon_name_by_id(pokemon_id):
   try:
     res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon-species/{pokemon_id}", timeout=3
+        f"https://pokeapi.co/api/v2/pokemon-species/{pokemon_id}", timeout=2
     )
     if res.status_code == 200:
       data = res.json()
@@ -384,7 +382,7 @@ def get_pokemon_name_by_id(pokemon_id):
 
 def get_pokemon_info_from_species_url(url):
   try:
-    res = requests.get(url, timeout=3)
+    res = requests.get(url, timeout=2)
     if res.status_code == 200:
       data = res.json()
       p_id = data["id"]
@@ -395,7 +393,7 @@ def get_pokemon_info_from_species_url(url):
       )
 
       p_res = requests.get(
-          f"https://pokeapi.co/api/v2/pokemon/{p_id}", timeout=3
+          f"https://pokeapi.co/api/v2/pokemon/{p_id}", timeout=2
       )
       img_url = ""
       if p_res.status_code == 200:
@@ -511,7 +509,6 @@ def extract_version_flavor_texts(species_data):
     elif lang == "en" and ver not in version_texts:
       version_texts[ver] = translate_to_ko(text)
 
-  # 1단계: 내용별로 버전들 그룹화 (블랙/화이트처럼 설명이 정확히 같으면 묶기 위함)
   text_to_versions = {}
   for ver, text in version_texts.items():
     v_name = VERSION_NAME_MAP.get(ver, ver.capitalize())
@@ -519,7 +516,6 @@ def extract_version_flavor_texts(species_data):
       text_to_versions[text] = []
     text_to_versions[text].append(v_name)
 
-  # 2단계: 표에 출력할 목록으로 재구성 (설명이 다르면 각각 유지, 같으면 슬래시로 묶음)
   formatted_list = []
   for text, v_names in text_to_versions.items():
     formatted_list.append(("/".join(v_names), text))
@@ -596,7 +592,7 @@ def get_special_forms(species_data, base_ko_name):
 
     if form_type or not is_default:
       try:
-        p_res = requests.get(v["pokemon"]["url"], timeout=3)
+        p_res = requests.get(v["pokemon"]["url"], timeout=2)
         if p_res.status_code == 200:
           p_data = p_res.json()
           img_url = (
@@ -681,14 +677,14 @@ def get_pokemon_data(query):
 
   try:
     pokemon_res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon/{target_id}", timeout=3
+        f"https://pokeapi.co/api/v2/pokemon/{target_id}", timeout=2
     )
     if pokemon_res.status_code != 200:
       return None
     pokemon_data = pokemon_res.json()
 
     species_res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon-species/{target_id}", timeout=3
+        f"https://pokeapi.co/api/v2/pokemon-species/{target_id}", timeout=2
     )
     species_data = species_res.json()
 
@@ -739,7 +735,7 @@ def get_pokemon_data(query):
     prev_evos_info, next_evos_info = [], []
     evo_url = species_data.get("evolution_chain", {}).get("url")
     if evo_url:
-      evo_res = requests.get(evo_url, timeout=3)
+      evo_res = requests.get(evo_url, timeout=2)
       if evo_res.status_code == 200:
         raw_prev, raw_next = find_evolution_neighbors(
             evo_res.json(), species_data["name"]
@@ -812,11 +808,26 @@ st.text_input(
 if st.session_state.search_query:
   query_text = str(st.session_state.search_query).strip()
 
-  # 로딩 스피너 부활
-  with st.spinner(
-      f"⚡ '{query_text}' 포켓몬 정보를 불러오는 중입니다. 잠시만"
-      " 기다려주세요..."
-  ):
+  # 예상 시간 표시가 포함된 커스텀 프로그레스바 로딩 구현
+  progress_text = st.empty(
+      f"⚡ '{query_text}' 포켓몬 정보를 불러오는 중입니다... (예상 소요 시간:"
+      " 약 1~2초)"
+  )
+  progress_bar = st.progress(0)
+
+  # 시각적인 프로그레스 바 연출 (속도 체감 개선)
+  for percent_complete in range(100):
+    time.sleep(0.005)
+    progress_bar.progress(percent_complete + 1)
+    if percent_complete == 50:
+      data = get_pokemon_data(query_text)
+
+  # 데이터 조회 완료 후 로딩 바 제거
+  progress_bar.empty()
+  progress_text.empty()
+
+  # 만약 위 루프 전후로 데이터가 안 불러와졌을 경우 대비해 한 번 더 체크
+  if "data" not in locals() or data is None:
     data = get_pokemon_data(query_text)
 
   if data:
