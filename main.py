@@ -724,51 +724,40 @@ if st.session_state.current_page == "메인":
   col1, col2, col3 = st.columns(3)
 
   with col1:
-    st.markdown(
-        """
-        <div style="border: 2px solid #008275; border-radius: 12px; padding: 20px; text-align: center; background-color: #f8f9fa; height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            <h1 style="font-size: 3rem; margin: 0;">📖</h1>
-            <h3 style="color: #008275; margin: 10px 0;">포켓몬 도감</h3>
-            <p style="color: #555; font-size: 0.9rem;">전국 포켓몬들의 상세 정보, 종족치, 진화 및 타입 상성을 확인하세요.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("포켓몬 도감 이동하기", use_container_width=True):
+    if st.button(
+        "📖\n\n포켓몬 도감\n\n전국 포켓몬들의 상세 정보, 종족치, 진화 및 타입 상성을"
+        " 확인하세요.",
+        use_container_width=True,
+    ):
       st.session_state.search_query = ""
       go_to_page("포켓몬 도감")
 
   with col2:
-    st.markdown(
-        """
-        <div style="border: 2px solid #008275; border-radius: 12px; padding: 20px; text-align: center; background-color: #f8f9fa; height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            <h1 style="font-size: 3rem; margin: 0;">👤</h1>
-            <h3 style="color: #008275; margin: 10px 0;">인물 도감</h3>
-            <p style="color: #555; font-size: 0.9rem;">포켓몬 세계관의 주요 트레이너, 체육관 관장 및 챔피언 정보를 확인하세요.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("인물 도감 이동하기", use_container_width=True):
+    if st.button(
+        "👤\n\n인물 도감\n\n포켓몬 세계관의 주요 트레이너, 체육관 관장 및 챔피언 정보를"
+        " 확인하세요.",
+        use_container_width=True,
+    ):
       go_to_page("인물 도감")
 
   with col3:
-    st.markdown(
-        """
-        <div style="border: 2px solid #008275; border-radius: 12px; padding: 20px; text-align: center; background-color: #f8f9fa; height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            <h1 style="font-size: 3rem; margin: 0;">🗺️</h1>
-            <h3 style="color: #008275; margin: 10px 0;">맵 도감</h3>
-            <p style="color: #555; font-size: 0.9rem;">지방별 주요 필드, 도시, 도로 및 서식지 정보를 탐색해보세요.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("맵 도감 이동하기", use_container_width=True):
+    if st.button(
+        "🗺️\n\n맵 도감\n\n지방별 주요 필드, 도시, 도로 및 서식지 정보를"
+        " 탐색해보세요.",
+        use_container_width=True,
+    ):
       go_to_page("맵 도감")
 
   st.markdown("<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>", unsafe_allow_html=True)
-  
-  featured_pokemons = ["딜리버드", "귀뚤뚜기", "헤라크로스", "슬리프", "나무지기", "루브도"]
+
+  featured_pokemons = [
+      "딜리버드",
+      "귀뚤뚜기",
+      "헤라크로스",
+      "슬리프",
+      "나무지기",
+      "루브도",
+  ]
   f_cols = st.columns(6)
 
   for idx, p_name in enumerate(featured_pokemons):
