@@ -107,19 +107,19 @@ st.markdown(
         text-align: center;
     }
     .form-card img {
-        width: 140px;
-        height: 140px;
+        width: 120px;
+        height: 120px;
         object-fit: contain;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
     .form-title {
         font-weight: bold;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         color: #ffffff;
         margin-bottom: 6px;
     }
     .form-desc {
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         color: #cccccc;
         margin-top: 6px;
     }
@@ -464,7 +464,21 @@ def get_special_forms(species_data, base_ko_name):
     is_default = v.get("is_default", False)
     v_name = v["pokemon"]["name"]
 
-    if is_default and "-mega" not in v_name:
+    # 기본 형태이면서 메가진화나 오리진 등이 아니면 건너뜀
+    if is_default and not any(
+        x in v_name
+        for x in [
+            "-mega",
+            "-origin",
+            "-primal",
+            "-gmax",
+            "unbound",
+            "active",
+            "therian",
+            "crowned",
+            "hero",
+        ]
+    ):
       continue
 
     form_type = ""
@@ -474,40 +488,41 @@ def get_special_forms(species_data, base_ko_name):
     if "-mega-x" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} X"
-      form_desc = (
-          "메가스톤을 이용하여 배틀 중에 한해서 일시적으로 한계를 넘어선"
-          " 진화를 이룹니다."
-      )
+      form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
     elif "-mega-y" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} Y"
-      form_desc = (
-          "메가스톤을 이용하여 배틀 중에 한해서 일시적으로 한계를 넘어선"
-          " 진화를 이룹니다."
-      )
+      form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
     elif "-mega" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name}"
-      form_desc = (
-          "메가스톤을 이용하여 배틀 중에 한해서 일시적으로 한계를 넘어선"
-          " 진화를 이룹니다."
-      )
+      form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
+    elif "-origin" in v_name:
+      form_type = "오리진폼"
+      form_ko_title = f"{base_ko_name} (오리진 폼)"
+      form_desc = "본래의 진정한 모습을 드러낸 오리진 형태입니다."
+    elif "-primal" in v_name:
+      form_type = "원시회귀"
+      form_ko_title = f"원시{base_ko_name}"
+      form_desc = "고대의 자연 에너지를 되찾아 원시회귀한 모습입니다."
     elif "-gmax" in v_name:
       form_type = "거다이맥스"
       form_ko_title = f"거다이맥스 {base_ko_name}"
-      form_desc = (
-          "가라르지방의 다이맥스 현상 중 특정 개체만이 거대해지며 고유의"
-          " 외형과 전용 다이맥스 기술을 사용합니다."
-      )
-    elif "greninja-ash" in v_name or "greninja-bond" in v_name:
-      form_type = "유대진화"
-      form_ko_title = "지우개굴닌자 (Ash-Greninja)"
-      form_desc = (
-          "지우와의 깊은 유대감으로 발동하는 유대변화 형태. 개굴닌자의 머리와"
-          " 등 뒤에 거대한 물창이 생겨납니다."
-      )
+      form_desc = "특정 개체만이 거대해지는 거다이맥스 형태입니다."
+    elif "unbound" in v_name or "hoopa-unbound" in v_name:
+      form_type = "해방폼"
+      form_ko_title = f"후파 (해방된 폼)"
+      form_desc = "진짜 힘을 되찾아 거대해진 후파의 모습입니다."
+    elif "confined" in v_name:
+      form_type = "매듭폼"
+      form_ko_title = f"후파 (매듭의 폼)"
+      form_desc = "작은 링에 봉인되어 있는 평소의 모습입니다."
+    elif not is_default:
+      form_type = "폼 체인지"
+      form_ko_title = f"{base_ko_name} (변형)"
+      form_desc = "포켓몬의 또 다른 형태입니다."
 
-    if form_type:
+    if form_type or not is_default:
       try:
         p_res = requests.get(v["pokemon"]["url"], timeout=3)
         if p_res.status_code == 200:
@@ -516,34 +531,30 @@ def get_special_forms(species_data, base_ko_name):
               p_data["sprites"]["other"]["official-artwork"]["front_default"]
               or p_data["sprites"]["front_default"]
           )
+          shiny_img_url = (
+              p_data["sprites"]["other"]["official-artwork"][
+                  "front_shiny"
+              ]
+              or p_data["sprites"]["front_shiny"]
+          )
+
           types_raw = [t["type"]["name"] for t in p_data["types"]]
           types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
 
+          if not form_ko_title:
+            form_ko_title = f"{base_ko_name} 폼"
+
           special_forms.append({
-              "type": form_type,
+              "type": form_type or "폼 체인지",
               "title": form_ko_title,
               "image": img_url,
+              "shiny_image": shiny_img_url,
               "types": types_ko,
               "raw_types": types_raw,
-              "desc": form_desc,
+              "desc": form_desc or "특수 폼 체인지 형태입니다.",
           })
       except Exception:
         pass
-
-  # 정상 로드되는 위키미디어 제공 테라스탈 아이콘 이미지
-  terastal_img = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Terastal_icon.png/240px-Terastal_icon.png"
-
-  special_forms.append({
-      "type": "테라스탈",
-      "title": f"테라스탈 {base_ko_name}",
-      "image": terastal_img,
-      "types": ["타입 변경 가능"],
-      "raw_types": [],
-      "desc": (
-          "팔데아지방의 현상으로, 테라스탈주얼이 발광하며 기술의 타입을"
-          " 강화하거나 포켓몬의 타입을 변환시킵니다."
-      ),
-  })
 
   return special_forms
 
@@ -672,6 +683,10 @@ def get_pokemon_data(query):
         pokemon_data["sprites"]["other"]["official-artwork"]["front_default"]
         or pokemon_data["sprites"]["front_default"]
     )
+    shiny_img_url = (
+        pokemon_data["sprites"]["other"]["official-artwork"]["front_shiny"]
+        or pokemon_data["sprites"]["front_shiny"]
+    )
 
     return {
         "id": pokemon_data["id"],
@@ -684,6 +699,7 @@ def get_pokemon_data(query):
         "height": pokemon_data["height"] / 10,
         "weight": pokemon_data["weight"] / 10,
         "image": img_url,
+        "shiny_image": shiny_img_url,
         "description": ko_flavor,
         "types": ko_types,
         "def_effectiveness": def_effectiveness,
@@ -702,7 +718,7 @@ def get_pokemon_data(query):
 st.title("⚡ 포켓몬 나무위키")
 
 st.text_input(
-    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 개굴닌자, 리자몽, 658, Pikachu)",
+    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 개굴닌자, 펄기아, 그란돈, 후파)",
     value=st.session_state.search_query,
     key="user_input",
     on_change=update_search,
@@ -831,7 +847,7 @@ if st.session_state.search_query:
       )
 
       st.markdown(
-          "<h3 class='section-title'>6. 특수 폼 체인지 & 변형</h3>",
+          "<h3 class='section-title'>6. 특수 폼 체인지 & 이로치</h3>",
           unsafe_allow_html=True,
       )
 
@@ -849,7 +865,16 @@ if st.session_state.search_query:
             st.markdown(
                 f"""
                             <div class='form-card'>
-                                <img src='{form['image']}'>
+                                <div style='display:flex; justify-content:center; gap:5px;'>
+                                    <div>
+                                        <div style='font-size:0.75rem; color:#aaa;'>일반</div>
+                                        <img src='{form['image']}'>
+                                    </div>
+                                    <div>
+                                        <div style='font-size:0.75rem; color:#ffdf6d;'>이로치</div>
+                                        <img src='{form['shiny_image']}'>
+                                    </div>
+                                </div>
                                 <div class='form-title'>{form['title']}</div>
                                 <div>{type_chips}</div>
                                 <div class='form-desc'>{form['desc']}</div>
@@ -864,7 +889,16 @@ if st.session_state.search_query:
           f" class='infobox-title'>{data['name']}</div></div>",
           unsafe_allow_html=True,
       )
-      st.image(data["image"], use_container_width=True)
+
+      # 우측 상단 메인 포켓몬의 일반/이로치 병렬 표시
+      img_tab1, img_tab2 = st.tabs(["일반", "✨ 이로치"])
+      with img_tab1:
+        st.image(data["image"], use_container_width=True)
+      with img_tab2:
+        if data["shiny_image"]:
+          st.image(data["shiny_image"], use_container_width=True)
+        else:
+          st.write("이로치 이미지가 없습니다.")
 
       st.table({
           "속성": [
