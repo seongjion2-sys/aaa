@@ -464,7 +464,6 @@ def get_special_forms(species_data, base_ko_name):
     is_default = v.get("is_default", False)
     v_name = v["pokemon"]["name"]
 
-    # 기본 형태이면서 메가진화나 오리진 등이 아니면 건너뜀
     if is_default and not any(
         x in v_name
         for x in [
@@ -890,7 +889,6 @@ if st.session_state.search_query:
           unsafe_allow_html=True,
       )
 
-      # 우측 상단 메인 포켓몬의 일반/이로치 병렬 표시
       img_tab1, img_tab2 = st.tabs(["일반", "✨ 이로치"])
       with img_tab1:
         st.image(data["image"], use_container_width=True)
