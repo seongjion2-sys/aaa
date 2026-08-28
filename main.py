@@ -98,31 +98,6 @@ st.markdown(
         font-weight: bold;
     }
 
-    .dex-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-        margin-bottom: 15px;
-        font-size: 0.9rem;
-        border: 1px solid #444;
-    }
-    .dex-table th {
-        background-color: #262626;
-        color: #ddd;
-        padding: 8px 10px;
-        border: 1px solid #444;
-        text-align: center;
-        width: 25%;
-    }
-    .dex-table td {
-        background-color: #1a1a1a;
-        color: #eee;
-        padding: 10px 12px;
-        border: 1px solid #444;
-        text-align: left;
-        width: 75%;
-    }
-
     .type-table {
         width: 100%;
         border-collapse: collapse;
@@ -211,48 +186,6 @@ TYPE_NAME_MAP = {
 
 TYPE_EN_MAP = {v: k for k, v in TYPE_NAME_MAP.items()}
 ALL_TYPES = list(TYPE_NAME_MAP.keys())
-
-VERSION_NAME_MAP = {
-    "red": "레드",
-    "blue": "블루",
-    "yellow": "옐로",
-    "gold": "골드",
-    "silver": "실버",
-    "crystal": "크리스탈",
-    "ruby": "루비",
-    "sapphire": "사파이어",
-    "emerald": "에메랄드",
-    "firered": "파이어레드",
-    "leafgreen": "리프그린",
-    "diamond": "다이아몬드",
-    "pearl": "펄",
-    "platinum": "플래티넘",
-    "heartgold": "하트골드",
-    "soulsilver": "소울실버",
-    "black": "블랙",
-    "white": "화이트",
-    "black-2": "블랙 2",
-    "white-2": "화이트 2",
-    "x": "X",
-    "y": "Y",
-    "omega-ruby": "오메가루비",
-    "alpha-sapphire": "알파사파이어",
-    "sun": "썬",
-    "moon": "문",
-    "ultra-sun": "울트라썬",
-    "ultra-moon": "울트라문",
-    "lets-go-pikachu": "피카츄",
-    "lets-go-eevee": "이브이",
-    "sword": "소드",
-    "shield": "실드",
-    "the-isle-of-armor": "갑옷의 섬",
-    "the-crown-tundra": "왕관의 설원",
-    "brilliant-diamond": "브릴리언트 다이아몬드",
-    "shining-pearl": "샤이닝 펄",
-    "legends-arceus": "PLA",
-    "scarlet": "스칼렛",
-    "violet": "바이올렛",
-}
 
 
 def get_type_color_class(ko_type_name):
@@ -494,33 +427,18 @@ def generate_hexagon_svg(stats):
 
 
 @st.cache_data(ttl=86400)
-def extract_version_flavor_texts(species_data):
+def extract_single_flavor_text(species_data):
   flavor_entries = species_data.get("flavor_text_entries", [])
-  version_texts = {}
+  for entry in flavor_entries:
+    if entry["language"]["name"] == "ko":
+      return entry["flavor_text"].replace("\n", " ").replace("\f", " ")
 
   for entry in flavor_entries:
-    lang = entry["language"]["name"]
-    ver = entry["version"]["name"]
-    text = entry["flavor_text"].replace("\n", " ").replace("\f", " ")
+    if entry["language"]["name"] == "en":
+      text = entry["flavor_text"].replace("\n", " ").replace("\f", " ")
+      return translate_to_ko(text)
 
-    if lang == "ko":
-      if ver not in version_texts:
-        version_texts[ver] = text
-    elif lang == "en" and ver not in version_texts:
-      version_texts[ver] = translate_to_ko(text)
-
-  text_to_versions = {}
-  for ver, text in version_texts.items():
-    v_name = VERSION_NAME_MAP.get(ver, ver.capitalize())
-    if text not in text_to_versions:
-      text_to_versions[text] = []
-    text_to_versions[text].append(v_name)
-
-  formatted_list = []
-  for text, v_names in text_to_versions.items():
-    formatted_list.append(("/".join(v_names), text))
-
-  return formatted_list
+  return "도감 설명이 존재하지 않습니다."
 
 
 @st.cache_data(ttl=86400)
@@ -621,7 +539,7 @@ def get_special_forms(species_data, base_ko_name):
           if not form_ko_title:
             form_ko_title = f"{base_ko_name} 폼"
 
-          version_flavor_list = extract_version_flavor_texts(species_data)
+          main_flavor = extract_single_flavor_text(species_data)
 
           special_forms.append({
               "type": form_type or "폼 체인지",
@@ -636,8 +554,7 @@ def get_special_forms(species_data, base_ko_name):
               "total_stats": total_stats,
               "height": p_data["height"] / 10,
               "weight": p_data["weight"] / 10,
-              "desc": form_desc or "특수 폼 체인지 형태입니다.",
-              "version_flavor_list": version_flavor_list,
+              "desc": form_desc or main_flavor,
           })
       except Exception:
         pass
@@ -697,12 +614,7 @@ def get_pokemon_data(query):
         pokemon_data["name"],
     )
 
-    version_flavor_list = extract_version_flavor_texts(species_data)
-    main_flavor = (
-        version_flavor_list[0][1]
-        if version_flavor_list
-        else "도감 설명이 존재하지 않습니다."
-    )
+    main_flavor = extract_single_flavor_text(species_data)
 
     ko_genus = next(
         (
@@ -774,7 +686,6 @@ def get_pokemon_data(query):
         "height": pokemon_data["height"] / 10,
         "weight": pokemon_data["weight"] / 10,
         "desc": main_flavor,
-        "version_flavor_list": version_flavor_list,
     }
 
     all_forms = [base_form_data] + special_forms
@@ -808,7 +719,7 @@ st.text_input(
 if st.session_state.search_query:
   query_text = str(st.session_state.search_query).strip()
 
-  # 예상 시간 표시가 포함된 커스텀 프로그레스바 로딩 구현 (오류 수정 완료)
+  # 예상 시간 표시가 포함된 커스텀 프로그레스바 로딩 구현
   progress_text = st.empty()
   progress_text.markdown(
       f"⚡ '{query_text}' 포켓몬 정보를 불러오는 중입니다... (예상 소요 시간:"
@@ -816,14 +727,12 @@ if st.session_state.search_query:
   )
   progress_bar = st.progress(0)
 
-  # 시각적인 프로그레스 바 연출 (속도 체감 개선)
   for percent_complete in range(100):
     time.sleep(0.005)
     progress_bar.progress(percent_complete + 1)
     if percent_complete == 50:
       data = get_pokemon_data(query_text)
 
-  # 데이터 조회 완료 후 로딩 바 제거
   progress_bar.empty()
   progress_text.empty()
 
@@ -885,21 +794,10 @@ if st.session_state.search_query:
 
         with col1:
           st.markdown(
-              "<h3 class='section-title'>1. 개요 및 버전별 도감 설명</h3>",
+              "<h3 class='section-title'>1. 개요 및 도감 설명</h3>",
               unsafe_allow_html=True,
           )
-
-          v_rows = ""
-          for v_name, v_desc in form_info["version_flavor_list"]:
-            v_rows += f"<tr><th>{v_name}</th><td>{v_desc}</td></tr>"
-
-          if v_rows:
-            st.markdown(
-                f"<table class='dex-table'>{v_rows}</table>",
-                unsafe_allow_html=True,
-            )
-          else:
-            st.info(f'"{form_info["desc"]}"')
+          st.info(form_info["desc"])
 
           st.markdown(
               "<h3 class='section-title'>2. 육각형 종족치 그래프</h3>",
