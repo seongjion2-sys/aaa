@@ -19,6 +19,18 @@ st.markdown(
         font-weight: bold;
         border-bottom: 2px solid var(--wiki-main);
         padding-bottom: 5px;
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .type-badge {
+        background-color: var(--wiki-main);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: normal;
     }
     .section-title {
         color: var(--wiki-main);
@@ -40,6 +52,14 @@ st.markdown(
         font-weight: bold;
         font-size: 1.2rem;
         border-radius: 4px;
+        margin-bottom: 10px;
+    }
+    .evo-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        background-color: #f9f9f9;
         margin-bottom: 10px;
     }
     </style>
@@ -93,22 +113,37 @@ def translate_to_ko(text):
   return text
 
 
-# species URL로부터 한글 이름 가져오기
-def get_ko_name_from_species_url(url):
+# species URL로부터 한글 이름 및 이미지, ID 가져오기
+def get_pokemon_info_from_species_url(url):
   try:
     res = requests.get(url, timeout=3)
     if res.status_code == 200:
       data = res.json()
-      return next(
+      p_id = data['id']
+      ko_name = next(
           (n['name'] for n in data['names'] if n['language']['name'] == 'ko'),
           data['name'],
       )
+
+      # 이미지 가져오기
+      p_res = requests.get(
+          f'https://pokeapi.co/api/v2/pokemon/{p_id}', timeout=3
+      )
+      img_url = ''
+      if p_res.status_code == 200:
+        p_data = p_res.json()
+        img_url = (
+            p_data['sprites']['other']['official-artwork']['front_default']
+            or p_data['sprites']['front_default']
+        )
+
+      return {'id': p_id, 'name': ko_name, 'image': img_url}
   except Exception:
     pass
   return None
 
 
-# 진화 트리를 재귀 탐색하여 이전/다음 진화체 탐색
+# 진화 트리를 탐색하여 이전/다음 진화체 찾기
 def find_evolution_neighbors(chain, target_species_name):
   prev_evos = []
   next_evos = []
@@ -304,9 +339,9 @@ def get_pokemon_data(query):
       stats_dict[s_name] = s_val
       total_stats += s_val
 
-    # 진화 정보 처리
-    prev_evos_names = []
-    next_evos_names = []
+    # 진화 상세 정보 (이름 + 이미지)
+    prev_evos_info = []
+    next_evos_info = []
 
     evo_url = species_data.get('evolution_chain', {}).get('url')
     if evo_url:
@@ -318,14 +353,14 @@ def get_pokemon_data(query):
         )
 
         for p in raw_prev:
-          name = get_ko_name_from_species_url(p['url'])
-          if name:
-            prev_evos_names.append(name)
+          info = get_pokemon_info_from_species_url(p['url'])
+          if info:
+            prev_evos_info.append(info)
 
         for n in raw_next:
-          name = get_ko_name_from_species_url(n['url'])
-          if name:
-            next_evos_names.append(name)
+          info = get_pokemon_info_from_species_url(n['url'])
+          if info:
+            next_evos_info.append(info)
 
     img_url = (
         pokemon_data['sprites']['other']['official-artwork']['front_default']
@@ -347,8 +382,8 @@ def get_pokemon_data(query):
         'types': ko_types,
         'stats': stats_dict,
         'total_stats': total_stats,
-        'prev_evos': prev_evos_names,
-        'next_evos': next_evos_names,
+        'prev_evos': prev_evos_info,
+        'next_evos': next_evos_info,
     }
   except Exception:
     return None
@@ -357,8 +392,8 @@ def get_pokemon_data(query):
 # 메인 화면 UI
 st.title('⚡ 포켓몬 나무위키')
 search_query = st.text_input(
-    '포켓몬 이름 또는 도감 번호를 입력하세요 (예: 파이리, 리자드, 리자몽, 칠색조)',
-    value='리자드',
+    '포켓몬 이름 또는 도감 번호를 입력하세요 (예: 파이리, 리자드, 리자몽, 이브이)',
+    value='파이리',
 )
 
 if search_query:
@@ -366,10 +401,19 @@ if search_query:
     data = get_pokemon_data(search_query)
 
   if data:
+    # 1. 포켓몬 이름 옆에 타입 배지 표시
+    type_badges_html = ''.join(
+        [f"<span class='type-badge'>{t}</span>" for t in data['types']]
+    )
+
     st.markdown(
-        f"<h1 class='main-title'>{data['name']} <small style='font-size:1rem;"
-        f" color:#666;'>| {data['english_name']}"
-        f" ({data['formatted_id']})</small></h1>",
+        f"""
+        <h1 class='main-title'>
+            {data['name']}
+            <small style='font-size:1rem; color:#666;'>| {data['english_name']} ({data['formatted_id']})</small>
+            {type_badges_html}
+        </h1>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -407,6 +451,42 @@ if search_query:
 
       st.write(f"**종족치 총합:** `{data['total_stats']}`")
 
+      # 2. '4. 진화' 섹션 추가 (이전/다음 진화체가 있을 때만 출력)
+      if data['prev_evos'] or data['next_evos']:
+        st.markdown(
+            "<h3 class='section-title'>4. 진화</h3>", unsafe_allow_html=True
+        )
+
+        if data['prev_evos']:
+          st.subheader('이전 진화 형태')
+          cols = st.columns(min(len(data['prev_evos']), 4))
+          for i, evo in enumerate(data['prev_evos']):
+            with cols[i % 4]:
+              st.markdown(
+                  f"""
+                                <div class='evo-card'>
+                                    <img src='{evo['image']}' style='width: 100%; max-width: 120px;'>
+                                    <p style='margin-top: 5px; font-weight: bold;'>{evo['name']}</p>
+                                </div>
+                            """,
+                  unsafe_allow_html=True,
+              )
+
+        if data['next_evos']:
+          st.subheader('다음 진화 형태')
+          cols = st.columns(min(len(data['next_evos']), 4))
+          for i, evo in enumerate(data['next_evos']):
+            with cols[i % 4]:
+              st.markdown(
+                  f"""
+                                <div class='evo-card'>
+                                    <img src='{evo['image']}' style='width: 100%; max-width: 120px;'>
+                                    <p style='margin-top: 5px; font-weight: bold;'>{evo['name']}</p>
+                                </div>
+                            """,
+                  unsafe_allow_html=True,
+              )
+
     with col2:
       st.markdown(
           f"""
@@ -418,25 +498,24 @@ if search_query:
       )
       st.image(data['image'], use_container_width=True)
 
-      # 오른쪽 테이블 동적 구성 (이전/다음 진화체가 있을 경우만 추가)
-      info_dict = {
-          '전국도감 번호': data['formatted_id'],
-          '분류': data['genus'],
-          '세대': data['generation'],
-          '타입': ', '.join(data['types']),
-          '신장': f"{data['height']} m",
-          '체중': f"{data['weight']} kg",
-          '포획률': f"{data['capture_rate']}",
-      }
-
-      if data['prev_evos']:
-        info_dict['이전 진화체'] = ', '.join(data['prev_evos'])
-      if data['next_evos']:
-        info_dict['다음 진화체'] = ', '.join(data['next_evos'])
-
+      # 오른쪽에 남아있는 정보 (타입 항목 제거됨)
       st.table({
-          '속성': list(info_dict.keys()),
-          '정보': list(info_dict.values()),
+          '속성': [
+              '전국도감 번호',
+              '분류',
+              '세대',
+              '신장',
+              '체중',
+              '포획률',
+          ],
+          '정보': [
+              data['formatted_id'],
+              data['genus'],
+              data['generation'],
+              f"{data['height']} m",
+              f"{data['weight']} kg",
+              f"{data['capture_rate']}",
+          ],
       })
   else:
     st.error(f"'{search_query}' 포켓몬 정보를 찾을 수 없습니다.")
