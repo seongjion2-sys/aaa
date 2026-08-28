@@ -453,8 +453,8 @@ def get_special_forms(species_data, base_ko_name):
     if is_default:
       continue
 
-    # 개굴닌자 등의 불필요한 일반 변형 폼 제외 조건
-    if "greninja" in v_name and "ash" not in v_name:
+    # 일반 변형 폼(폼 체인지 슬롯에 해당하는 항목들)을 완전히 필터링하여 제외
+    if "-mega" not in v_name and "ash" not in v_name:
       continue
 
     form_type = ""
@@ -500,9 +500,7 @@ def get_special_forms(species_data, base_ko_name):
           "트레이너와의 강한 유대로 인해 한계 이상으로 변한 유대진화 모습입니다."
       )
     else:
-      form_type = "폼 체인지"
-      form_ko_title = f"{base_ko_name} (변형)"
-      form_desc = "포켓몬의 또 다른 형태입니다."
+      continue
 
     try:
       p_res = requests.get(v["pokemon"]["url"], timeout=2)
@@ -833,7 +831,7 @@ if st.session_state.search_query:
           st.write("##### **[방어 상성]** (상대 타입 기술로 공격받을 때 배율)")
           st.markdown(
               render_type_table(form_info["def_effectiveness"], is_defense=True),
-              unsafe_allow_html=True,
+              unsafe_allow_html=T,
           )
 
         with col2:
