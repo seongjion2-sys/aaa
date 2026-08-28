@@ -71,6 +71,14 @@ def update_search():
     add_search_history(query)
 
 
+def update_national_search():
+  query = st.session_state.national_user_input
+  st.session_state.search_query = query
+  st.session_state.current_page = "전국 도감"
+  if query.strip():
+    add_search_history(query)
+
+
 # CSS 스타일 적용
 st.markdown(
     """
@@ -161,8 +169,8 @@ st.markdown(
         color: #222222;
         border: 2px solid #e0e0e0;
         border-radius: 14px 14px 0 0;
-        padding: 30px 20px;
-        height: 190px;
+        padding: 25px 15px;
+        height: 180px;
         text-align: center;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         display: flex;
@@ -641,6 +649,27 @@ def search_pokemon_id_in_generation(query_name, start_id, end_id):
 
 
 @st.cache_data(ttl=86400)
+def search_national_pokemon_id(query_name, max_id=1025):
+  query_name = query_name.strip().lower()
+
+  if query_name.isdigit():
+    num = int(query_name)
+    if 1 <= num <= max_id:
+      return num
+    return None
+
+  try:
+    for p_id in range(1, max_id + 1):
+      ko_name = get_pokemon_name_by_id(p_id)
+      if ko_name and query_name in ko_name.lower():
+        return p_id
+  except Exception:
+    pass
+
+  return None
+
+
+@st.cache_data(ttl=86400)
 def get_pokemon_data(target_id):
   if not target_id:
     return None
@@ -790,6 +819,9 @@ st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
   go_to_page("Main")
 
+if st.sidebar.button("🌐 전국 도감", use_container_width=True):
+  go_to_page("전국 도감")
+
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🕒 최근 검색 기록")
 if st.session_state.search_history:
@@ -802,7 +834,8 @@ if st.session_state.search_history:
         f"🔍 {h_item}", key=f"side_hist_{h_item}", use_container_width=True
     ):
       st.session_state.search_query = h_item
-      go_to_page("포켓몬 도감")
+      if st.session_state.current_page == "Main":
+        st.session_state.current_page = "전국 도감"
       st.rerun()
 else:
   st.sidebar.write("최근 검색한 기록이 없습니다.")
@@ -814,20 +847,20 @@ if st.session_state.current_page == "Main":
   st.title("⚡ 포켓몬 나무위키 통합 메인")
   st.write("원하시는 도감을 선택하여 상세 정보를 확인해 보세요!")
 
-  col1, col2, col3 = st.columns(3)
+  col1, col2, col3, col4 = st.columns(4)
   with col1:
     st.markdown(
         """
         <div class="menu-card">
-            <div style="font-size: 2.2rem; margin-bottom: 8px;">📖</div>
-            <div style="font-weight: bold; font-size: 1.2rem; color: #008275; margin-bottom: 6px;">포켓몬 도감</div>
-            <div style="font-size: 0.85rem; color: #666;">전국 포켓몬들의 상세 정보, 세대별 목록, 종족치 및 상성을 확인하세요.</div>
+            <div style="font-size: 2.0rem; margin-bottom: 6px;">📖</div>
+            <div style="font-weight: bold; font-size: 1.1rem; color: #008275; margin-bottom: 4px;">포켓몬 도감</div>
+            <div style="font-size: 0.8rem; color: #666;">세대별 포켓몬 목록 및 종족치 확인</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
     if st.button(
-        "포켓몬 도감 이동하기", key="btn_pokedex", use_container_width=True
+        "세대별 도감", key="btn_pokedex", use_container_width=True
     ):
       go_to_page("포켓몬 도감")
       st.rerun()
@@ -836,31 +869,48 @@ if st.session_state.current_page == "Main":
     st.markdown(
         """
         <div class="menu-card">
-            <div style="font-size: 2.2rem; margin-bottom: 8px;">👤</div>
-            <div style="font-weight: bold; font-size: 1.2rem; color: #008275; margin-bottom: 6px;">인물 도감</div>
-            <div style="font-size: 0.85rem; color: #666;">포켓몬 세계관의 주요 트레이너, 체육관 관장 및 챔피언 정보를 확인하세요.</div>
+            <div style="font-size: 2.0rem; margin-bottom: 6px;">🌐</div>
+            <div style="font-weight: bold; font-size: 1.1rem; color: #008275; margin-bottom: 4px;">전국 도감</div>
+            <div style="font-size: 0.8rem; color: #666;">1~9세대 전체 포켓몬 통합 탐색</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
     if st.button(
-        "인물 도감 이동하기", key="btn_character", use_container_width=True
+        "전국 도감", key="btn_national", use_container_width=True
     ):
-      go_to_page("인물 도감")
+      go_to_page("전국 도감")
       st.rerun()
 
   with col3:
     st.markdown(
         """
         <div class="menu-card">
-            <div style="font-size: 2.2rem; margin-bottom: 8px;">🗺️</div>
-            <div style="font-weight: bold; font-size: 1.2rem; color: #008275; margin-bottom: 6px;">맵 도감</div>
-            <div style="font-size: 0.85rem; color: #666;">지방별 주요 필드, 도시, 도로 및 서식지 정보를 탐색해보세요.</div>
+            <div style="font-size: 2.0rem; margin-bottom: 6px;">👤</div>
+            <div style="font-weight: bold; font-size: 1.1rem; color: #008275; margin-bottom: 4px;">인물 도감</div>
+            <div style="font-size: 0.8rem; color: #666;">트레이너 및 체육관 관장 정보</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    if st.button("맵 도감 이동하기", key="btn_map", use_container_width=True):
+    if st.button(
+        "인물 도감", key="btn_character", use_container_width=True
+    ):
+      go_to_page("인물 도감")
+      st.rerun()
+
+  with col4:
+    st.markdown(
+        """
+        <div class="menu-card">
+            <div style="font-size: 2.0rem; margin-bottom: 6px;">🗺️</div>
+            <div style="font-weight: bold; font-size: 1.1rem; color: #008275; margin-bottom: 4px;">맵 도감</div>
+            <div style="font-size: 0.8rem; color: #666;">지방별 필드 및 서식지 정보</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button("맵 도감", key="btn_map", use_container_width=True):
       go_to_page("맵 도감")
       st.rerun()
 
@@ -886,11 +936,224 @@ if st.session_state.current_page == "Main":
         st.session_state.search_query = p_name
         st.session_state.selected_gen = None
         add_search_history(p_name)
-        go_to_page("포켓몬 도감")
+        go_to_page("전국 도감")
         st.rerun()
 
+elif st.session_state.current_page == "전국 도감":
+  st.title("🌐 전국 포켓몬 도감 (No.1 ~ No.1025)")
+  st.write("1세대부터 9세대까지 모든 포켓몬을 통합 검색하고 상세 정보를 확인하세요.")
+
+  st.text_input(
+      "전국 포켓몬 통합 검색",
+      value=st.session_state.search_query,
+      key="national_user_input",
+      on_change=update_national_search,
+      placeholder="포켓몬 이름 또는 번호 입력 (예: 피카츄, 25)...",
+  )
+
+  if st.session_state.search_history:
+    st.markdown("**최근 검색:**")
+    hist_cols = st.columns(min(len(st.session_state.search_history), 8))
+    for i, h_term in enumerate(st.session_state.search_history[:8]):
+      with hist_cols[i]:
+        if st.button(
+            f"📌 {h_term}", key=f"nat_chip_hist_{i}", use_container_width=True
+        ):
+          target_id = search_national_pokemon_id(h_term)
+          if target_id:
+            st.session_state.search_query = h_term
+            st.rerun()
+          else:
+            st.warning(f"'{h_term}'에 해당하는 포켓몬을 찾을 수 없습니다.")
+
+  query_text = str(st.session_state.search_query).strip()
+
+  if not query_text:
+    st.markdown(
+        "<h5 style='color: #008275; margin-top:20px;'>위 검색창에 포켓몬 이름이나 번호를 입력하세요. (전체 1025마리 통합)</h5>",
+        unsafe_allow_html=True,
+    )
+  else:
+    target_id = search_national_pokemon_id(query_text)
+
+    if target_id and 1 <= target_id <= 1025:
+      data = get_pokemon_data(target_id)
+      if data:
+        current_id = data["id"]
+        prev_id = max(1, current_id - 1) if current_id > 1 else None
+        next_id = min(1025, current_id + 1) if current_id < 1025 else None
+
+        prev_name = get_pokemon_name_by_id(prev_id) if prev_id else ""
+        next_name = get_pokemon_name_by_id(next_id) if next_id else ""
+
+        btn_col1, btn_col2, _ = st.columns([1, 1, 2])
+        with btn_col1:
+          if prev_id and st.button(
+              f"◀ 이전: {prev_name} (No.{str(prev_id).zfill(4)})",
+              key="nat_prev",
+              use_container_width=True,
+          ):
+            st.session_state.search_query = str(prev_id)
+            add_search_history(prev_name)
+            st.rerun()
+
+        with btn_col2:
+          if next_id and st.button(
+              f"다음: {next_name} (No.{str(next_id).zfill(4)}) ▶",
+              key="nat_next",
+              use_container_width=True,
+          ):
+            st.session_state.search_query = str(next_id)
+            add_search_history(next_name)
+            st.rerun()
+
+        st.markdown(
+            f"""
+            <h1 class='main-title'>
+                {data['name']}
+                <small style='font-size:1rem; color:#666;'>| {data['english_name']} ({data['formatted_id']})</small>
+            </h1>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        form_tab_titles = [f["type"] for f in data["forms"]]
+        form_tabs = st.tabs(form_tab_titles)
+
+        for tab_idx, form_info in enumerate(data["forms"]):
+          with form_tabs[tab_idx]:
+            type_badges_html = "".join([
+                f"<span class='type-badge"
+                f" {get_type_color_class(t)}'>{t}</span>"
+                for t in form_info["types"]
+            ])
+            st.markdown(
+                f"### {form_info['title']} {type_badges_html}",
+                unsafe_allow_html=True,
+            )
+
+            col1, col2 = st.columns([1.8, 1.2])
+
+            with col1:
+              st.markdown(
+                  "<h3 class='section-title'>1. 개요 및 도감 설명</h3>",
+                  unsafe_allow_html=True,
+              )
+              st.info(form_info["desc"])
+
+              st.markdown(
+                  "<h3 class='section-title'>2. 육각형 종족치 그래프</h3>",
+                  unsafe_allow_html=True,
+              )
+              st.markdown(
+                  generate_hexagon_svg(form_info["stats"]),
+                  unsafe_allow_html=True,
+              )
+
+              stat_cols = st.columns(3)
+              for idx, (stat_name, stat_val) in enumerate(
+                  form_info["stats"].items()
+              ):
+                with stat_cols[idx % 3]:
+                  st.metric(label=stat_name, value=stat_val)
+
+              st.write(f"**종족치 총합:** `{form_info['total_stats']}`")
+
+              if tab_idx == 0 and (data["prev_evos"] or data["next_evos"]):
+                st.markdown(
+                    "<h3 class='section-title'>3. 진화</h3>",
+                    unsafe_allow_html=True,
+                )
+                if data["prev_evos"]:
+                  st.write("**이전 진화 형태**")
+                  cols = st.columns(min(len(data["prev_evos"]), 3))
+                  for i, evo in enumerate(data["prev_evos"]):
+                    with cols[i % 3]:
+                      st.markdown(
+                          f"<div class='evo-card'><img"
+                          f" src='{evo['image']}'><div"
+                          " class='evo-info'><div"
+                          f" class='evo-id'>{evo['formatted_id']}</div><div"
+                          f" class='evo-name'>{evo['name']}</div></div></div>",
+                          unsafe_allow_html=True,
+                      )
+                if data["next_evos"]:
+                  st.write("**다음 진화 형태**")
+                  cols = st.columns(min(len(data["next_evos"]), 3))
+                  for i, evo in enumerate(data["next_evos"]):
+                    with cols[i % 3]:
+                      st.markdown(
+                          f"<div class='evo-card'><img"
+                          f" src='{evo['image']}'><div"
+                          " class='evo-info'><div"
+                          f" class='evo-id'>{evo['formatted_id']}</div><div"
+                          f" class='evo-name'>{evo['name']}</div></div></div>",
+                          unsafe_allow_html=True,
+                      )
+
+              st.markdown(
+                  "<h3 class='section-title'>4. 타입 상성</h3>",
+                  unsafe_allow_html=True,
+              )
+              st.write("##### **[공격 상성]** (자신의 타입 기술로 공격 시 배율)")
+              st.markdown(
+                  render_type_table(
+                      form_info["atk_effectiveness"], is_defense=False
+                  ),
+                  unsafe_allow_html=True,
+              )
+
+              st.write(
+                  "##### **[방어 상성]** (상대 타입 기술로 공격받을 때 배율)"
+              )
+              st.markdown(
+                  render_type_table(
+                      form_info["def_effectiveness"], is_defense=True
+                  ),
+                  unsafe_allow_html=True,
+              )
+
+            with col2:
+              st.markdown(
+                  f"<div class='infobox'><div"
+                  f" class='infobox-title'>{form_info['title']}</div></div>",
+                  unsafe_allow_html=True,
+              )
+
+              sub_tab1, sub_tab2 = st.tabs(["일반", "✨ 이로치"])
+              with sub_tab1:
+                st.image(form_info["image"], use_container_width=True)
+              with sub_tab2:
+                if form_info["shiny_image"]:
+                  st.image(
+                      form_info["shiny_image"], use_container_width=True
+                  )
+                else:
+                  st.write("이로치 이미지가 없습니다.")
+
+              st.table({
+                  "속성": [
+                      "전국도감 번호",
+                      "분류",
+                      "세대",
+                      "신장",
+                      "체중",
+                      "포획률",
+                  ],
+                  "정보": [
+                      data["formatted_id"],
+                      data["genus"],
+                      data["generation"],
+                      f"{form_info['height']} m",
+                      f"{form_info['weight']} kg",
+                      f"{data['capture_rate']}",
+                  ],
+              })
+    else:
+      st.error(f"'{query_text}'에 해당하는 포켓몬을 찾을 수 없습니다.")
+
 elif st.session_state.current_page == "포켓몬 도감":
-  st.title("📖 포켓몬 도감")
+  st.title("📖 세대별 포켓몬 도감")
 
   if not st.session_state.selected_gen:
     st.write(
