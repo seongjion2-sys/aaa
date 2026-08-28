@@ -819,8 +819,8 @@ st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
   go_to_page("Main")
 
-if st.sidebar.button("🌐 전국 도감", use_container_width=True):
-  go_to_page("전국 도감")
+if st.sidebar.button("📖 세대별 도감", use_container_width=True):
+  go_to_page("포켓몬 도감")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🕒 최근 검색 기록")
@@ -859,30 +859,11 @@ if st.session_state.current_page == "Main":
         """,
         unsafe_allow_html=True,
     )
-    if st.button(
-        "세대별 도감", key="btn_pokedex", use_container_width=True
-    ):
+    if st.button("세대별 도감", key="btn_pokedex", use_container_width=True):
       go_to_page("포켓몬 도감")
       st.rerun()
 
   with col2:
-    st.markdown(
-        """
-        <div class="menu-card">
-            <div style="font-size: 2.0rem; margin-bottom: 6px;">🌐</div>
-            <div style="font-weight: bold; font-size: 1.1rem; color: #008275; margin-bottom: 4px;">전국 도감</div>
-            <div style="font-size: 0.8rem; color: #666;">1~9세대 전체 포켓몬 통합 탐색</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button(
-        "전국 도감", key="btn_national", use_container_width=True
-    ):
-      go_to_page("전국 도감")
-      st.rerun()
-
-  with col3:
     st.markdown(
         """
         <div class="menu-card">
@@ -893,13 +874,11 @@ if st.session_state.current_page == "Main":
         """,
         unsafe_allow_html=True,
     )
-    if st.button(
-        "인물 도감", key="btn_character", use_container_width=True
-    ):
+    if st.button("인물 도감", key="btn_character", use_container_width=True):
       go_to_page("인물 도감")
       st.rerun()
 
-  with col4:
+  with col3:
     st.markdown(
         """
         <div class="menu-card">
@@ -1163,33 +1142,53 @@ elif st.session_state.current_page == "포켓몬 도감":
         "<h3 class='section-title'>📦 세대별 도감 선택</h3>", unsafe_allow_html=True
     )
 
-    gen_keys = list(GENERATIONS.keys())
-    for r in range(3):
+    # 1~9세대 카드(3열씩 3줄 = 9개) + 10번째 칸(전국 도감) 출력 루프
+    all_menu_items = list(GENERATIONS.keys()) + ["전국 도감"]
+
+    for r in range(4):
       cols = st.columns(3)
       for c in range(3):
         idx = r * 3 + c
-        if idx < len(gen_keys):
-          g_name = gen_keys[idx]
-          g_info = GENERATIONS[g_name]
-          start, end = g_info["range"]
+        if idx < len(all_menu_items):
+          item_name = all_menu_items[idx]
           with cols[c]:
-            st.markdown(
-                f"""
-                <div class="gen-banner" style="background-color: {g_info['color']};">
-                    {g_name}<br>
-                    <span style="font-size: 0.85rem; font-weight: normal;">No.{str(start).zfill(3)} ~ No.{str(end).zfill(3)}</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                f"{g_name} 도감 입장",
-                key=f"gen_btn_{idx}",
-                use_container_width=True,
-            ):
-              st.session_state.selected_gen = g_name
-              st.session_state.search_query = ""
-              st.rerun()
+            if item_name == "전국 도감":
+              st.markdown(
+                  """
+                  <div class="gen-banner" style="background-color: #2F3640;">
+                      전국 도감<br>
+                      <span style="font-size: 0.85rem; font-weight: normal;">No.001 ~ No.1025</span>
+                  </div>
+                  """,
+                  unsafe_allow_html=True,
+              )
+              if st.button(
+                  "전국 도감 입장",
+                  key="btn_national_card",
+                  use_container_width=True,
+              ):
+                go_to_page("전국 도감")
+                st.rerun()
+            else:
+              g_info = GENERATIONS[item_name]
+              start, end = g_info["range"]
+              st.markdown(
+                  f"""
+                  <div class="gen-banner" style="background-color: {g_info['color']};">
+                      {item_name}<br>
+                      <span style="font-size: 0.85rem; font-weight: normal;">No.{str(start).zfill(3)} ~ No.{str(end).zfill(3)}</span>
+                  </div>
+                  """,
+                  unsafe_allow_html=True,
+              )
+              if st.button(
+                  f"{item_name} 도감 입장",
+                  key=f"gen_btn_{idx}",
+                  use_container_width=True,
+              ):
+                st.session_state.selected_gen = item_name
+                st.session_state.search_query = ""
+                st.rerun()
 
   else:
     g_name = st.session_state.selected_gen
@@ -1202,9 +1201,7 @@ elif st.session_state.current_page == "포켓몬 도감":
         st.session_state.search_query = ""
         st.rerun()
     with col_title:
-      st.markdown(
-          f"### ⚡ {g_name} 도감 (No.{start_id} ~ No.{end_id})"
-      )
+      st.markdown(f"### ⚡ {g_name} 도감 (No.{start_id} ~ No.{end_id})")
 
     st.text_input(
         f"{g_name} 포켓몬 검색",
