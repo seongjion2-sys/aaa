@@ -33,6 +33,7 @@ GENERATIONS = {
     "9세대 (팔데아)": {"range": (906, 1025), "color": "#C2185B"},
 }
 
+# 한글 추천 포켓몬을 위한 영문 매핑
 FEATURED_POKEMON_MAP = {
     "켄타로스": "tauros",
     "식스테일": "vulpix",
@@ -43,12 +44,14 @@ FEATURED_POKEMON_MAP = {
 }
 
 
+# 페이지 이동 함수
 def go_to_page(page_name):
   st.session_state.current_page = page_name
   if page_name == "포켓몬 도감":
     st.session_state.selected_gen = None
 
 
+# 검색어 기록 추가 함수
 def add_search_history(query):
   query = query.strip()
   if query:
@@ -59,6 +62,7 @@ def add_search_history(query):
       st.session_state.search_history.pop()
 
 
+# 검색어 업데이트 콜백
 def update_search():
   query = st.session_state.user_input
   st.session_state.search_query = query
@@ -531,166 +535,11 @@ def get_special_forms(species_data, base_ko_name, species_name):
   special_forms = []
   varieties = species_data.get("varieties", [])
 
-  # 1. 켄타로스(tauros) 팔데아 품종 명시적 추가
-  if species_name.lower() == "tauros":
-    paldean_urls = [
-        ("컴뱃종", f"{base_ko_name} (컴뱃종)", "https://pokeapi.co/api/v2/pokemon/tauros-paldea-combat"),
-        ("블레이즈종", f"{base_ko_name} (블레이즈종)", "https://pokeapi.co/api/v2/pokemon/tauros-paldea-blaze"),
-        ("워터종", f"{base_ko_name} (워터종)", "https://pokeapi.co/api/v2/pokemon/tauros-paldea-aqua"),
-    ]
-    for form_type, form_ko_title, p_url in paldean_urls:
-      try:
-        p_res = requests.get(p_url, timeout=2)
-        if p_res.status_code == 200:
-          p_data = p_res.json()
-          img_url = p_data["sprites"]["other"]["official-artwork"]["front_default"] or p_data["sprites"]["front_default"]
-          shiny_img_url = p_data["sprites"]["other"]["official-artwork"]["front_shiny"] or p_data["sprites"]["shiny_default"]
-
-          types_raw = [t["type"]["name"] for t in p_data["types"]]
-          types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
-          def_eff, atk_eff = calculate_type_effectiveness(types_raw)
-
-          stats_dict = {}
-          total_stats = 0
-          for s in p_data["stats"]:
-            s_name = STAT_NAME_MAP.get(s["stat"]["name"], s["stat"]["name"])
-            s_val = s["base_stat"]
-            stats_dict[s_name] = s_val
-            total_stats += s_val
-
-          special_forms.append({
-              "type": form_type,
-              "title": form_ko_title,
-              "image": img_url,
-              "shiny_image": shiny_img_url,
-              "types": types_ko,
-              "raw_types": types_raw,
-              "def_effectiveness": def_eff,
-              "atk_effectiveness": atk_eff,
-              "stats": stats_dict,
-              "total_stats": total_stats,
-              "height": p_data["height"] / 10,
-              "weight": p_data["weight"] / 10,
-              "desc": f"팔데아지방의 환경에 적응한 {form_type} 모습입니다.",
-          })
-      except Exception:
-        pass
-
-  # 2. 후파(hoopa) 해방폼 명시적 추가
-  if species_name.lower() == "hoopa":
-    try:
-      p_res = requests.get("https://pokeapi.co/api/v2/pokemon/hoopa-unbound", timeout=2)
-      if p_res.status_code == 200:
-        p_data = p_res.json()
-        img_url = p_data["sprites"]["other"]["official-artwork"]["front_default"] or p_data["sprites"]["front_default"]
-        shiny_img_url = p_data["sprites"]["other"]["official-artwork"]["front_shiny"] or p_data["sprites"]["shiny_default"]
-        types_raw = [t["type"]["name"] for t in p_data["types"]]
-        types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
-        def_eff, atk_eff = calculate_type_effectiveness(types_raw)
-        stats_dict = {}
-        total_stats = 0
-        for s in p_data["stats"]:
-          s_name = STAT_NAME_MAP.get(s["stat"]["name"], s["stat"]["name"])
-          s_val = s["base_stat"]
-          stats_dict[s_name] = s_val
-          total_stats += s_val
-        special_forms.append({
-            "type": "해방폼",
-            "title": f"후파 (굴레를 벗어난 후파)",
-            "image": img_url,
-            "shiny_image": shiny_img_url,
-            "types": types_ko,
-            "raw_types": types_raw,
-            "def_effectiveness": def_eff,
-            "atk_effectiveness": atk_eff,
-            "stats": stats_dict,
-            "total_stats": total_stats,
-            "height": p_data["height"] / 10,
-            "weight": p_data["weight"] / 10,
-            "desc": "진짜 모습을 되찾아 굴레를 벗어난 해방된 모습입니다.",
-        })
-    except Exception:
-      pass
-
-  # 3. 플라엣테(floette) 영원의 꽃 명시적 추가
-  if species_name.lower() == "floette":
-    try:
-      p_res = requests.get("https://pokeapi.co/api/v2/pokemon/floette-eternal", timeout=2)
-      if p_res.status_code == 200:
-        p_data = p_res.json()
-        img_url = p_data["sprites"]["other"]["official-artwork"]["front_default"] or p_data["sprites"]["front_default"]
-        shiny_img_url = p_data["sprites"]["other"]["official-artwork"]["front_shiny"] or p_data["sprites"]["shiny_default"]
-        types_raw = [t["type"]["name"] for t in p_data["types"]]
-        types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
-        def_eff, atk_eff = calculate_type_effectiveness(types_raw)
-        stats_dict = {}
-        total_stats = 0
-        for s in p_data["stats"]:
-          s_name = STAT_NAME_MAP.get(s["stat"]["name"], s["stat"]["name"])
-          s_val = s["base_stat"]
-          stats_dict[s_name] = s_val
-          total_stats += s_val
-        special_forms.append({
-            "type": "영원의 꽃",
-            "title": f"플라엣테 (영원의 꽃)",
-            "image": img_url,
-            "shiny_image": shiny_img_url,
-            "types": types_ko,
-            "raw_types": types_raw,
-            "def_effectiveness": def_eff,
-            "atk_effectiveness": atk_eff,
-            "stats": stats_dict,
-            "total_stats": total_stats,
-            "height": p_data["height"] / 10,
-            "weight": p_data["weight"] / 10,
-            "desc": "기존에 볼 수 없던 이상한 꽃을 품고 있는 영원의 꽃 모습입니다.",
-        })
-    except Exception:
-      pass
-
-  # 4. 원시회귀 원시폼(그란돈, 가이오가) 명시적 추가
-  if species_name.lower() in ["groudon", "kyogre"]:
-    form_slug = f"{species_name.lower()}-primal"
-    form_ko_title = "원시그란돈" if species_name.lower() == "groudon" else "원시가이오가"
-    try:
-      p_res = requests.get(f"https://pokeapi.co/api/v2/pokemon/{form_slug}", timeout=2)
-      if p_res.status_code == 200:
-        p_data = p_res.json()
-        img_url = p_data["sprites"]["other"]["official-artwork"]["front_default"] or p_data["sprites"]["front_default"]
-        shiny_img_url = p_data["sprites"]["other"]["official-artwork"]["front_shiny"] or p_data["sprites"]["shiny_default"]
-        types_raw = [t["type"]["name"] for t in p_data["types"]]
-        types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
-        def_eff, atk_eff = calculate_type_effectiveness(types_raw)
-        stats_dict = {}
-        total_stats = 0
-        for s in p_data["stats"]:
-          s_name = STAT_NAME_MAP.get(s["stat"]["name"], s["stat"]["name"])
-          s_val = s["base_stat"]
-          stats_dict[s_name] = s_val
-          total_stats += s_val
-        special_forms.append({
-            "type": "원시폼",
-            "title": form_ko_title,
-            "image": img_url,
-            "shiny_image": shiny_img_url,
-            "types": types_ko,
-            "raw_types": types_raw,
-            "def_effectiveness": def_eff,
-            "atk_effectiveness": atk_eff,
-            "stats": stats_dict,
-            "total_stats": total_stats,
-            "height": p_data["height"] / 10,
-            "weight": p_data["weight"] / 10,
-            "desc": "자연의 에너지를 가득 품고 원시회귀한 강력한 모습입니다.",
-        })
-    except Exception:
-      pass
-
   for v in varieties:
     is_default = v.get("is_default", False)
     v_name = v["pokemon"]["name"]
 
-    if is_default:
+    if is_default or "paldea" in v_name:
       continue
 
     form_type = ""
@@ -709,8 +558,6 @@ def get_special_forms(species_data, base_ko_name, species_name):
       form_type = "히스이폼"
       form_ko_title = f"{base_ko_name} (히스이의 모습)"
       form_desc = "과거 히스이지방의 대자연 속에서 살아오며 변화한 모습입니다."
-    elif "-combat" in v_name or "-blaze" in v_name or "-aqua" in v_name or "-unbound" in v_name or "-eternal" in v_name or "-primal" in v_name:
-      continue  # 위에서 이미 처리함
     elif "-mega-x" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} X"
@@ -1295,6 +1142,7 @@ elif st.session_state.current_page == "포켓몬 도감":
         "<h3 class='section-title'>📦 세대별 도감 선택</h3>", unsafe_allow_html=True
     )
 
+    # 1~9세대 카드(3열씩 3줄 = 9개) + 10번째 칸(전국 도감) 출력 루프
     all_menu_items = list(GENERATIONS.keys()) + ["전국 도감"]
 
     for r in range(4):
