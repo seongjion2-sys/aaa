@@ -371,7 +371,7 @@ def find_evolution_neighbors(chain, target_species_name):
 def generate_hexagon_svg(stats):
   keys = ["체력(HP)", "공격", "방어", "특수공격", "특수방어", "스피드"]
   vals = [stats.get(k, 0) for k in keys]
-  max_val = 180.0
+  max_val = 255.0  # 종족치 최대치 기준 스케일 조정 (원시회귀/종족치 높은 폼 대응)
   cx, cy, r = 150, 150, 100
 
   grid_lines = ""
@@ -512,6 +512,15 @@ def get_special_forms(species_data, base_ko_name):
 
           types_raw = [t["type"]["name"] for t in p_data["types"]]
           types_ko = [TYPE_NAME_MAP.get(t, t) for t in types_raw]
+          def_eff, atk_eff = calculate_type_effectiveness(types_raw)
+
+          stats_dict = {}
+          total_stats = 0
+          for s in p_data["stats"]:
+            s_name = STAT_NAME_MAP.get(s["stat"]["name"], s["stat"]["name"])
+            s_val = s["base_stat"]
+            stats_dict[s_name] = s_val
+            total_stats += s_val
 
           if not form_ko_title:
             form_ko_title = f"{base_ko_name} 폼"
@@ -523,6 +532,12 @@ def get_special_forms(species_data, base_ko_name):
               "shiny_image": shiny_img_url,
               "types": types_ko,
               "raw_types": types_raw,
+              "def_effectiveness": def_eff,
+              "atk_effectiveness": atk_eff,
+              "stats": stats_dict,
+              "total_stats": total_stats,
+              "height": p_data["height"] / 10,
+              "weight": p_data["weight"] / 10,
               "desc": form_desc or "특수 폼 체인지 형태입니다.",
           })
       except Exception:
@@ -660,6 +675,24 @@ def get_pokemon_data(query):
         or pokemon_data["sprites"]["front_shiny"]
     )
 
+    base_form_data = {
+        "type": "기본",
+        "title": f"{ko_name} (기본)",
+        "image": img_url,
+        "shiny_image": shiny_img_url,
+        "types": ko_types,
+        "raw_types": raw_types,
+        "def_effectiveness": def_effectiveness,
+        "atk_effectiveness": atk_effectiveness,
+        "stats": stats_dict,
+        "total_stats": total_stats,
+        "height": pokemon_data["height"] / 10,
+        "weight": pokemon_data["weight"] / 10,
+        "desc": ko_flavor,
+    }
+
+    all_forms = [base_form_data] + special_forms
+
     return {
         "id": pokemon_data["id"],
         "formatted_id": f"No.{str(pokemon_data['id']).zfill(4)}",
@@ -668,19 +701,9 @@ def get_pokemon_data(query):
         "genus": ko_genus,
         "generation": f"{gen_roman} 세대",
         "capture_rate": capture_rate,
-        "height": pokemon_data["height"] / 10,
-        "weight": pokemon_data["weight"] / 10,
-        "image": img_url,
-        "shiny_image": shiny_img_url,
-        "description": ko_flavor,
-        "types": ko_types,
-        "def_effectiveness": def_effectiveness,
-        "atk_effectiveness": atk_effectiveness,
-        "stats": stats_dict,
-        "total_stats": total_stats,
+        "forms": all_forms,
         "prev_evos": prev_evos_info,
         "next_evos": next_evos_info,
-        "special_forms": special_forms,
     }
   except Exception:
     return None
@@ -690,7 +713,7 @@ def get_pokemon_data(query):
 st.title("⚡ 포켓몬 나무위키")
 
 st.text_input(
-    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 플라엣테, 펄기아, 후파)",
+    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 그란돈, 후파, 플라엣테)",
     value=st.session_state.search_query,
     key="user_input",
     on_change=update_search,
@@ -725,165 +748,152 @@ if st.session_state.search_query:
         st.session_state.search_query = str(next_id)
         st.rerun()
 
-    type_badges_html = "".join([
-        f"<span class='type-badge"
-        f" {get_type_color_class(t)}'>{t}</span>"
-        for t in data["types"]
-    ])
-
     st.markdown(
         f"""
         <h1 class='main-title'>
             {data['name']}
             <small style='font-size:1rem; color:#666;'>| {data['english_name']} ({data['formatted_id']})</small>
-            {type_badges_html}
         </h1>
         """,
         unsafe_allow_html=True,
     )
 
-    col1, col2 = st.columns([1.8, 1.2])
+    # 전체 폼 목록 탭 구성 (기본, 영원의 꽃, 원시회귀, 해방된 폼 등 각각의 독립 탭)
+    form_tab_titles = []
+    for f in data["forms"]:
+      if f["type"] == "기본":
+        form_tab_titles.append("기본 폼")
+      else:
+        form_tab_titles.append(f["type"])
 
-    with col1:
-      st.markdown(
-          "<h3 class='section-title'>1. 개요</h3>", unsafe_allow_html=True
-      )
-      st.write(
-          f"**{data['name']}**은(는) {data['generation']}에 처음 등장한"
-          f" {data['genus']}입니다."
-      )
+    form_tabs = st.tabs(form_tab_titles)
 
-      st.markdown(
-          "<h3 class='section-title'>2. 도감 설명</h3>",
-          unsafe_allow_html=True,
-      )
-      st.info(f'"{data["description"]}"')
+    for tab_idx, form_info in enumerate(data["forms"]):
+      with form_tabs[tab_idx]:
+        type_badges_html = "".join([
+            f"<span class='type-badge"
+            f" {get_type_color_class(t)}'>{t}</span>"
+            for t in form_info["types"]
+        ])
+        st.markdown(f"### {form_info['title']} {type_badges_html}", unsafe_allow_html=True)
 
-      st.markdown(
-          "<h3 class='section-title'>3. 육각형 종족치 그래프</h3>",
-          unsafe_allow_html=True,
-      )
-      st.markdown(generate_hexagon_svg(data["stats"]), unsafe_allow_html=True)
+        col1, col2 = st.columns([1.8, 1.2])
 
-      stat_cols = st.columns(3)
-      for idx, (stat_name, stat_val) in enumerate(data["stats"].items()):
-        with stat_cols[idx % 3]:
-          st.metric(label=stat_name, value=stat_val)
+        with col1:
+          st.markdown(
+              "<h3 class='section-title'>1. 개요 및 설명</h3>",
+              unsafe_allow_html=True,
+          )
+          if tab_idx == 0:
+            st.write(
+                f"**{data['name']}**은(는) {data['generation']}에 처음 등장한"
+                f" {data['genus']}입니다."
+            )
+            st.info(f'"{form_info["desc"]}"')
+          else:
+            st.write(
+                f"**{form_info['title']}** 형태의 {data['name']} 정보입니다."
+            )
+            st.info(f'"{form_info["desc"]}"')
 
-      st.write(f"**종족치 총합:** `{data['total_stats']}`")
+          st.markdown(
+              "<h3 class='section-title'>2. 육각형 종족치 그래프</h3>",
+              unsafe_allow_html=True,
+          )
+          st.markdown(
+              generate_hexagon_svg(form_info["stats"]), unsafe_allow_html=True
+          )
 
-      if data["prev_evos"] or data["next_evos"]:
-        st.markdown(
-            "<h3 class='section-title'>4. 진화</h3>", unsafe_allow_html=True
-        )
-        if data["prev_evos"]:
-          st.write("**이전 진화 형태**")
-          cols = st.columns(min(len(data["prev_evos"]), 3))
-          for i, evo in enumerate(data["prev_evos"]):
-            with cols[i % 3]:
-              st.markdown(
-                  f"<div class='evo-card'><img"
-                  f" src='{evo['image']}'><div"
-                  " class='evo-info'><div"
-                  f" class='evo-id'>{evo['formatted_id']}</div><div"
-                  f" class='evo-name'>{evo['name']}</div></div></div>",
-                  unsafe_allow_html=True,
-              )
-        if data["next_evos"]:
-          st.write("**다음 진화 형태**")
-          cols = st.columns(min(len(data["next_evos"]), 3))
-          for i, evo in enumerate(data["next_evos"]):
-            with cols[i % 3]:
-              st.markdown(
-                  f"<div class='evo-card'><img"
-                  f" src='{evo['image']}'><div"
-                  " class='evo-info'><div"
-                  f" class='evo-id'>{evo['formatted_id']}</div><div"
-                  f" class='evo-name'>{evo['name']}</div></div></div>",
-                  unsafe_allow_html=True,
-              )
+          stat_cols = st.columns(3)
+          for idx, (stat_name, stat_val) in enumerate(
+              form_info["stats"].items()
+          ):
+            with stat_cols[idx % 3]:
+              st.metric(label=stat_name, value=stat_val)
 
-      st.markdown(
-          "<h3 class='section-title'>5. 타입 상성</h3>", unsafe_allow_html=True
-      )
-      st.write("##### **[공격 상성]** (자신의 타입 기술로 공격 시 배율)")
-      st.markdown(
-          render_type_table(data["atk_effectiveness"], is_defense=False),
-          unsafe_allow_html=True,
-      )
+          st.write(f"**종족치 총합:** `{form_info['total_stats']}`")
 
-      st.write("##### **[방어 상성]** (상대 타입 기술로 공격받을 때 배율)")
-      st.markdown(
-          render_type_table(data["def_effectiveness"], is_defense=True),
-          unsafe_allow_html=True,
-      )
+          if tab_idx == 0 and (data["prev_evos"] or data["next_evos"]):
+            st.markdown(
+                "<h3 class='section-title'>3. 진화</h3>", unsafe_allow_html=True
+            )
+            if data["prev_evos"]:
+              st.write("**이전 진화 형태**")
+              cols = st.columns(min(len(data["prev_evos"]), 3))
+              for i, evo in enumerate(data["prev_evos"]):
+                with cols[i % 3]:
+                  st.markdown(
+                      f"<div class='evo-card'><img"
+                      f" src='{evo['image']}'><div"
+                      " class='evo-info'><div"
+                      f" class='evo-id'>{evo['formatted_id']}</div><div"
+                      f" class='evo-name'>{evo['name']}</div></div></div>",
+                      unsafe_allow_html=True,
+                  )
+            if data["next_evos"]:
+              st.write("**다음 진화 형태**")
+              cols = st.columns(min(len(data["next_evos"]), 3))
+              for i, evo in enumerate(data["next_evos"]):
+                with cols[i % 3]:
+                  st.markdown(
+                      f"<div class='evo-card'><img"
+                      f" src='{evo['image']}'><div"
+                      " class='evo-info'><div"
+                      f" class='evo-id'>{evo['formatted_id']}</div><div"
+                      f" class='evo-name'>{evo['name']}</div></div></div>",
+                      unsafe_allow_html=True,
+                  )
 
-    with col2:
-      st.markdown(
-          f"<div class='infobox'><div"
-          f" class='infobox-title'>{data['name']}</div></div>",
-          unsafe_allow_html=True,
-      )
+          st.markdown(
+              "<h3 class='section-title'>4. 타입 상성</h3>",
+              unsafe_allow_html=True,
+          )
+          st.write("##### **[공격 상성]** (자신의 타입 기술로 공격 시 배율)")
+          st.markdown(
+              render_type_table(form_info["atk_effectiveness"], is_defense=False),
+              unsafe_allow_html=True,
+          )
 
-      # 탭 동적 생성: 일반, 이로치 및 특수 폼(영원의 꽃 등)
-      form_tabs_labels = ["일반", "✨ 이로치"]
-      for form in data["special_forms"]:
-        form_tabs_labels.append(form["type"])
+          st.write("##### **[방어 상성]** (상대 타입 기술로 공격받을 때 배율)")
+          st.markdown(
+              render_type_table(form_info["def_effectiveness"], is_defense=True),
+              unsafe_allow_html=True,
+          )
 
-      form_tabs = st.tabs(form_tabs_labels)
+        with col2:
+          st.markdown(
+              f"<div class='infobox'><div"
+              f" class='infobox-title'>{form_info['title']}</div></div>",
+              unsafe_allow_html=True,
+          )
 
-      # 1. 일반 탭
-      with form_tabs[0]:
-        st.image(data["image"], use_container_width=True)
-
-      # 2. 이로치 탭
-      with form_tabs[1]:
-        if data["shiny_image"]:
-          st.image(data["shiny_image"], use_container_width=True)
-        else:
-          st.write("이로치 이미지가 없습니다.")
-
-      # 3. 특수 폼 탭들 (영원의 꽃 등)
-      for idx, form in enumerate(data["special_forms"]):
-        with form_tabs[2 + idx]:
           sub_tab1, sub_tab2 = st.tabs(["일반", "✨ 이로치"])
           with sub_tab1:
-            st.image(form["image"], use_container_width=True)
+            st.image(form_info["image"], use_container_width=True)
           with sub_tab2:
-            if form["shiny_image"]:
-              st.image(form["shiny_image"], use_container_width=True)
+            if form_info["shiny_image"]:
+              st.image(form_info["shiny_image"], use_container_width=True)
             else:
               st.write("이로치 이미지가 없습니다.")
 
-          st.markdown(f"**{form['title']}**")
-          type_chips = "".join([
-              f"<span class='type-chip bg-{rt}'>{t}</span>"
-              for t, rt in zip(
-                  form["types"],
-                  form.get("raw_types", ["" for _ in form["types"]]),
-              )
-          ])
-          st.markdown(type_chips, unsafe_allow_html=True)
-          st.caption(form["desc"])
-
-      st.table({
-          "속성": [
-              "전국도감 번호",
-              "분류",
-              "세대",
-              "신장",
-              "체중",
-              "포획률",
-          ],
-          "정보": [
-              data["formatted_id"],
-              data["genus"],
-              data["generation"],
-              f"{data['height']} m",
-              f"{data['weight']} kg",
-              f"{data['capture_rate']}",
-          ],
-      })
+          st.table({
+              "속성": [
+                  "전국도감 번호",
+                  "분류",
+                  "세대",
+                  "신장",
+                  "체중",
+                  "포획률",
+              ],
+              "정보": [
+                  data["formatted_id"],
+                  data["genus"],
+                  data["generation"],
+                  f"{form_info['height']} m",
+                  f"{form_info['weight']} kg",
+                  f"{data['capture_rate']}",
+              ],
+          })
   else:
     st.error(
         f"'{st.session_state.search_query}' 포켓몬 정보를 찾을 수 없습니다."
