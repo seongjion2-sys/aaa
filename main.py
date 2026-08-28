@@ -11,7 +11,7 @@ if "search_query" not in st.session_state:
   st.session_state.search_query = ""
 
 if "current_page" not in st.session_state:
-  st.session_state.current_page = "메인"
+  st.session_state.current_page = "Main"
 
 if "selected_gen" not in st.session_state:
   st.session_state.selected_gen = None
@@ -609,19 +609,16 @@ def get_special_forms(species_data, base_ko_name, species_name):
   return special_forms
 
 
-# 현재 선택된 세대 범위 내에서만 이름/번호로 ID를 찾는 함수
 @st.cache_data(ttl=86400)
 def search_pokemon_id_in_generation(query_name, start_id, end_id):
   query_name = query_name.strip().lower()
 
-  # 숫자로 검색한 경우 범위 내에 있는지 확인
   if query_name.isdigit():
     num = int(query_name)
     if start_id <= num <= end_id:
       return num
     return None
 
-  # 이름으로 검색한 경우 해당 세대 범위 안에서만 탐색
   try:
     for p_id in range(start_id, end_id + 1):
       ko_name = get_pokemon_name_by_id(p_id)
@@ -884,7 +881,6 @@ if st.session_state.current_page == "Main":
 elif st.session_state.current_page == "포켓몬 도감":
   st.title("📖 포켓몬 도감")
 
-  # 1. 세대 선택 화면 (선택된 세대가 없을 때)
   if not st.session_state.selected_gen:
     st.write(
         "**원하시는 세대 도감을 선택하여 해당 세대 포켓몬만 탐색 및 검색하세요.**"
@@ -921,7 +917,6 @@ elif st.session_state.current_page == "포켓몬 도감":
               st.session_state.search_query = ""
               st.rerun()
 
-  # 2. 특정 세대 도감 내부 화면 (선택된 세대가 있을 때)
   else:
     g_name = st.session_state.selected_gen
     start_id, end_id = GENERATIONS[g_name]["range"]
@@ -937,7 +932,6 @@ elif st.session_state.current_page == "포켓몬 도감":
           f"### ⚡ {g_name} 도감 (No.{start_id} ~ No.{end_id})"
       )
 
-    # 해당 세대 범위 내에서만 검색 가능한 입력창
     st.text_input(
         f"{g_name} 포켓몬 검색",
         value=st.session_state.search_query,
@@ -948,7 +942,6 @@ elif st.session_state.current_page == "포켓몬 도감":
         ),
     )
 
-    # 최근 검색 기록 칩 표시 (현재 세대 범위 내 결과만 필터링하거나 안내)
     if st.session_state.search_history:
       st.markdown("**최근 검색:**")
       hist_cols = st.columns(min(len(st.session_state.search_history), 8))
@@ -957,7 +950,6 @@ elif st.session_state.current_page == "포켓몬 도감":
           if st.button(
               f"📌 {h_term}", key=f"chip_hist_{i}", use_container_width=True
           ):
-            # 기록을 클릭했을 때도 현재 세대 범위 안의 포켓몬인지 검증
             target_id = search_pokemon_id_in_generation(
                 h_term, start_id, end_id
             )
@@ -972,7 +964,6 @@ elif st.session_state.current_page == "포켓몬 도감":
 
     query_text = str(st.session_state.search_query).strip()
 
-    # 검색어가 없는 경우: 해당 세대 전체 목록을 버튼 격자로 보여줌
     if not query_text:
       st.markdown(
           f"<h5 style='color: #008275; margin-top:20px;'>포켓몬을 선택하거나"
@@ -994,7 +985,6 @@ elif st.session_state.current_page == "포켓몬 도감":
             add_search_history(p_name)
             st.rerun()
 
-    # 검색어가 있는 경우: 해당 세대 범위 내에서만 검색 수행
     else:
       target_id = search_pokemon_id_in_generation(
           query_text, start_id, end_id
@@ -1004,7 +994,6 @@ elif st.session_state.current_page == "포켓몬 도감":
         data = get_pokemon_data(target_id)
         if data:
           current_id = data["id"]
-          # 세대 범위 내에서의 이전/다음 이동
           prev_id = (
               max(start_id, current_id - 1) if current_id > start_id else None
           )
@@ -1146,9 +1135,7 @@ elif st.session_state.current_page == "포켓몬 도감":
                 st.markdown(
                     f"<div class='infobox'><div"
                     f" class='infobox-title'>{form_info['title']}</div></div>",
-                    unsafe_allow_html=TypeResponseError := True
-                    if False
-                    else True,
+                    unsafe_allow_html=True,
                 )
 
                 sub_tab1, sub_tab2 = st.tabs(["일반", "✨ 이로치"])
