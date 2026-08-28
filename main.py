@@ -530,8 +530,8 @@ def get_special_forms(species_data, base_ko_name):
       except Exception:
         pass
 
-  # 캐시 우회를 위해 쿼리 스트링(?v=2)이 들어간 테라스탈 이미지 경로
-  terastal_img = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tera-orb.png?v=2"
+  # 정상 로드되는 위키미디어 제공 테라스탈 아이콘 이미지
+  terastal_img = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Terastal_icon.png/240px-Terastal_icon.png"
 
   special_forms.append({
       "type": "테라스탈",
