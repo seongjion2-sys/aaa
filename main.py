@@ -34,7 +34,6 @@ st.markdown(
     :root {
         --wiki-main: #008275;
     }
-    /* 검색창 크기 및 스타일 확대 */
     .stTextInput input {
         font-size: 1.2rem !important;
         padding: 14px 18px !important;
@@ -113,8 +112,6 @@ st.markdown(
         font-size: 1.05rem;
         font-weight: bold;
     }
-
-    /* 메인 메뉴 하얀색 카드 스타일 */
     .menu-card {
         background-color: #ffffff;
         color: #222222;
@@ -129,7 +126,6 @@ st.markdown(
         align-items: center;
         justify-content: center;
     }
-
     .type-table {
         width: 100%;
         border-collapse: collapse;
@@ -161,7 +157,6 @@ st.markdown(
         font-size: 0.82rem;
         box-shadow: 0 1px 2px rgba(0,0,0,0.3);
     }
-
     .bg-normal { background-color: #A8A878 !important; }
     .bg-fire { background-color: #F08030 !important; }
     .bg-water { background-color: #6890F0 !important; }
@@ -478,12 +473,12 @@ def get_special_forms(species_data, base_ko_name, species_name):
   special_forms = []
   varieties = species_data.get("varieties", [])
 
-  # 1. varieties 기반 폼 추출
+  # 1. 일반적인 varieties 기반 폼 추출 (켄타로스의 팔데아 제네릭 형태는 제외)
   for v in varieties:
     is_default = v.get("is_default", False)
     v_name = v["pokemon"]["name"]
 
-    if is_default:
+    if is_default or "paldea" in v_name:
       continue
 
     form_type = ""
@@ -502,10 +497,6 @@ def get_special_forms(species_data, base_ko_name, species_name):
       form_type = "히스이폼"
       form_ko_title = f"{base_ko_name} (히스이의 모습)"
       form_desc = "과거 히스이지방의 대자연 속에서 살아오며 변화한 모습입니다."
-    elif "-paldea" in v_name:
-      form_type = "팔데아폼"
-      form_ko_title = f"{base_ko_name} (팔데아의 모습)"
-      form_desc = "팔데아지방의 거친 환경에 적응하여 진화한 모습입니다."
     elif "-mega-x" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} X"
@@ -572,7 +563,7 @@ def get_special_forms(species_data, base_ko_name, species_name):
     except Exception:
       pass
 
-  # 2. 켄타로스 같은 특수 품종 직접 조회 보완 (팔데아 켄타로스 등)
+  # 2. 켄타로스 전용: 컴뱃종, 블레이즈종, 아쿠아종만 명확하게 추가
   if species_name == "tauros":
     breed_forms = [
         (
@@ -595,9 +586,6 @@ def get_special_forms(species_data, base_ko_name, species_name):
         ),
     ]
     for b_slug, b_type, b_title, b_desc in breed_forms:
-      # 중복 추가 방지
-      if any(f["title"] == b_title for f in special_forms):
-        continue
       try:
         p_res = requests.get(
             f"https://pokeapi.co/api/v2/pokemon/{b_slug}", timeout=2
@@ -823,9 +811,7 @@ if st.session_state.current_page == "메인":
   st.title("⚡ 포켓몬 나무위키 통합 메인")
   st.write("원하시는 도감을 선택하여 상세 정보를 확인해 보세요!")
 
-  st.write("")
   col1, col2, col3 = st.columns(3)
-
   with col1:
     st.markdown(
         """
@@ -873,7 +859,6 @@ if st.session_state.current_page == "메인":
       st.rerun()
 
   st.markdown("<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>", unsafe_allow_html=True)
-
   featured_pokemons = [
       "켄타로스",
       "식스테일",
@@ -883,7 +868,6 @@ if st.session_state.current_page == "메인":
       "루브도",
   ]
   f_cols = st.columns(6)
-
   for idx, p_name in enumerate(featured_pokemons):
     img_url = get_featured_pokemon_image(p_name)
     with f_cols[idx]:
@@ -1100,8 +1084,8 @@ elif st.session_state.current_page == "포켓몬 도감":
 
 elif st.session_state.current_page == "인물 도감":
   st.title("👤 인물 도감")
-  st.info("준비 중인 페이지입니다. 포켓몬 세계관의 주요 인물들을 만나보세요!")
+  st.info("준비 중인 페이지입니다.")
 
 elif st.session_state.current_page == "맵 도감":
   st.title("🗺️ 맵 도감")
-  st.info("준비 중인 페이지입니다. 포켓몬 세계의 다양한 지방과 장소를 탐색해보세요!")
+  st.info("준비 중인 페이지입니다.")
