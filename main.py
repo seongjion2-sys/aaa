@@ -64,7 +64,6 @@ st.markdown(
         border-radius: 4px;
         margin-bottom: 10px;
     }
-    /* 진화 카드 스타일 */
     .evo-card {
         border: 1px solid #333333;
         border-radius: 8px;
@@ -147,7 +146,28 @@ def translate_to_ko(text):
   return text
 
 
-# ID로 포켓몬 한글 이름 가져오는 함수
+# 전국도감 (1~1025) 포켓몬 이름-ID 매핑 캐싱 (최초 1회만 로드)
+@st.cache_data(ttl=86400)
+def get_pokemon_name_id_map():
+  name_to_id = {}
+  id_to_name = {}
+  try:
+    # 1025개 한 번에 조회
+    res = requests.get(
+        "https://pokeapi.co/api/v2/pokemon-species?limit=1025", timeout=5
+    )
+    if res.status_code == 200:
+      results = res.json()["results"]
+      for idx, item in enumerate(results, start=1):
+        eng_name = item["name"]
+        name_to_id[eng_name.lower()] = idx
+        id_to_name[idx] = eng_name
+  except Exception:
+    pass
+  return name_to_id, id_to_name
+
+
+# ID로 포켓몬 한글 이름 가져오는 함수 (캐싱 적용)
 @st.cache_data
 def get_pokemon_name_by_id(pokemon_id):
   try:
@@ -283,51 +303,40 @@ def generate_hexagon_svg(stats):
     """
 
 
-# 포켓몬 정보 불러오기
+# 빠른 검색을 위한 데이터 처리
 @st.cache_data
 def get_pokemon_data(query):
   query = str(query).strip()
   target_id = None
 
   if query.isdigit():
-    target_id = query
+    target_id = int(query)
   else:
-    try:
-      species_res = requests.get(
-          f"https://pokeapi.co/api/v2/pokemon-species/{query.lower()}"
-      )
-      if species_res.status_code == 200:
-        target_id = species_res.json()["id"]
-      else:
-        search_res = requests.get(
-            "https://pokeapi.co/api/v2/pokemon-species?limit=1025"
-        )
-        if search_res.status_code == 200:
-          results = search_res.json()["results"]
-          for item in results:
-            sp_res = requests.get(item["url"])
-            if sp_res.status_code == 200:
-              sp_data = sp_res.json()
-              names = [n["name"] for n in sp_data["names"]]
-              if query in names:
-                target_id = sp_data["id"]
-                break
-    except Exception:
-      return None
+    # 1. 영문명/ID 직접 API 검색 시도
+    species_res = requests.get(
+        f"https://pokeapi.co/api/v2/pokemon-species/{query.lower()}", timeout=3
+    )
+    if species_res.status_code == 200:
+      target_id = species_res.json()["id"]
+    else:
+      # 2. 한국어 이름 매핑 (1~1025)
+      name_map, _ = get_pokemon_name_id_map()
+      if query.lower() in name_map:
+        target_id = name_map[query.lower()]
 
   if not target_id:
     return None
 
   try:
     pokemon_res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon/{target_id}"
+        f"https://pokeapi.co/api/v2/pokemon/{target_id}", timeout=3
     )
     if pokemon_res.status_code != 200:
       return None
     pokemon_data = pokemon_res.json()
 
     species_res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon-species/{target_id}"
+        f"https://pokeapi.co/api/v2/pokemon-species/{target_id}", timeout=3
     )
     species_data = species_res.json()
 
@@ -393,7 +402,7 @@ def get_pokemon_data(query):
 
     evo_url = species_data.get("evolution_chain", {}).get("url")
     if evo_url:
-      evo_res = requests.get(evo_url)
+      evo_res = requests.get(evo_url, timeout=3)
       if evo_res.status_code == 200:
         evo_chain = evo_res.json()
         raw_prev, raw_next = find_evolution_neighbors(
@@ -442,7 +451,7 @@ st.title("⚡ 포켓몬 나무위키")
 
 # 검색 입력창
 st.text_input(
-    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 파이리, 5, 리자몽)",
+    "포켓몬 이름 또는 도감 번호를 입력하세요 (예: 파이리, 5, Pikachu)",
     value=st.session_state.search_query,
     key="user_input",
     on_change=update_search,
