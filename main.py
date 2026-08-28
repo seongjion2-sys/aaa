@@ -54,24 +54,37 @@ st.markdown(
         border-radius: 4px;
         margin-bottom: 10px;
     }
+    /* 진화 카드 스타일 수정 (흰색 배경 제거, 이미지 좌측 정렬) */
     .evo-card {
-        border: 1px solid #e0e0e0;
+        border: 1px solid #333333;
         border-radius: 8px;
-        padding: 12px 8px;
-        text-align: center;
-        background-color: #f9f9f9;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background-color: transparent;
         margin-bottom: 10px;
+        width: max-content;
+        min-width: 180px;
+    }
+    .evo-card img {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+    }
+    .evo-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        text-align: left;
     }
     .evo-id {
         font-size: 0.8rem;
-        color: #888;
-        margin-bottom: 4px;
+        color: #aaaaaa;
     }
     .evo-name {
-        font-size: 1rem;
+        font-size: 1.05rem;
         font-weight: bold;
-        color: #333;
-        margin-top: 6px;
     }
     </style>
 """,
@@ -137,7 +150,6 @@ def get_pokemon_info_from_species_url(url):
           data['name'],
       )
 
-      # 이미지 가져오기
       p_res = requests.get(
           f'https://pokeapi.co/api/v2/pokemon/{p_id}', timeout=3
       )
@@ -356,7 +368,7 @@ def get_pokemon_data(query):
       stats_dict[s_name] = s_val
       total_stats += s_val
 
-    # 진화 상세 정보 (이름 + 도감 번호 + 이미지)
+    # 진화 상세 정보
     prev_evos_info = []
     next_evos_info = []
 
@@ -467,39 +479,43 @@ if search_query:
 
       st.write(f"**종족치 총합:** `{data['total_stats']}`")
 
-      # '4. 진화' 섹션 (도감 번호 + 이미지 + 이름 카드 구성)
+      # '4. 진화' 섹션 (좌측 이미지 + 우측 텍스트 구조의 컴팩트 카드)
       if data['prev_evos'] or data['next_evos']:
         st.markdown(
             "<h3 class='section-title'>4. 진화</h3>", unsafe_allow_html=True
         )
 
         if data['prev_evos']:
-          st.subheader('이전 진화 형태')
-          cols = st.columns(min(len(data['prev_evos']), 4))
+          st.write("**이전 진화 형태**")
+          cols = st.columns(min(len(data['prev_evos']), 3))
           for i, evo in enumerate(data['prev_evos']):
-            with cols[i % 4]:
+            with cols[i % 3]:
               st.markdown(
                   f"""
                                 <div class='evo-card'>
-                                    <div class='evo-id'>{evo['formatted_id']}</div>
-                                    <img src='{evo['image']}' style='width: 100%; max-width: 120px;'>
-                                    <div class='evo-name'>{evo['name']}</div>
+                                    <img src='{evo['image']}'>
+                                    <div class='evo-info'>
+                                        <div class='evo-id'>{evo['formatted_id']}</div>
+                                        <div class='evo-name'>{evo['name']}</div>
+                                    </div>
                                 </div>
                             """,
                   unsafe_allow_html=True,
               )
 
         if data['next_evos']:
-          st.subheader('다음 진화 형태')
-          cols = st.columns(min(len(data['next_evos']), 4))
+          st.write("**다음 진화 형태**")
+          cols = st.columns(min(len(data['next_evos']), 3))
           for i, evo in enumerate(data['next_evos']):
-            with cols[i % 4]:
+            with cols[i % 3]:
               st.markdown(
                   f"""
                                 <div class='evo-card'>
-                                    <div class='evo-id'>{evo['formatted_id']}</div>
-                                    <img src='{evo['image']}' style='width: 100%; max-width: 120px;'>
-                                    <div class='evo-name'>{evo['name']}</div>
+                                    <img src='{evo['image']}'>
+                                    <div class='evo-info'>
+                                        <div class='evo-id'>{evo['formatted_id']}</div>
+                                        <div class='evo-name'>{evo['name']}</div>
+                                    </div>
                                 </div>
                             """,
                   unsafe_allow_html=True,
