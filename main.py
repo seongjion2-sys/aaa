@@ -443,6 +443,13 @@ st.markdown(
         margin-bottom: 10px;
         font-size: 1.2rem;
     }
+    .char-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        margin-bottom: 15px;
+    }
     .type-table {
         width: 100%;
         border-collapse: collapse;
@@ -1724,91 +1731,37 @@ elif st.session_state.current_page == "포켓몬 도감":
 elif st.session_state.current_page == "인물 도감":
   st.title("👤 세대별 인물 도감")
 
-  if not st.session_state.selected_char_gen:
-    st.write(
-        "**원하시는 세대를 선택하여 해당 세대에 등장하는 주요 인물 및 관장"
-        " 정보를 탐색하세요.**"
-    )
-    st.markdown(
-        "<h3 class='section-title'>📦 세대별 인물 도감 선택</h3>",
-        unsafe_allow_html=True,
-    )
+  st.write(
+      "**세대별로 등장하는 주요 인물 및 관장 정보를 한눈에 확인하세요.**"
+  )
+  st.markdown(
+      "<h3 class='section-title'>📦 세대별 인물 도감 선택</h3>",
+      unsafe_allow_html=True,
+  )
 
-    row1 = ["1세대 (관동)", "2세대 (성도)", "3세대 (호연)"]
-    row2 = ["4세대 (신오)", "5세대 (하나)", "6세대 (칼로스)"]
-    row3 = ["7세대 (알로라)", "8세대 (가라르)", "9세대 (팔데아)"]
-    row4 = [None, "히스이 지방", None]
+  # 9세대는 원래 자리(8세대 우측)에 두고, 히스이 지방을 8세대 아래로 배치
+  row1 = ["1세대 (관동)", "2세대 (성도)", "3세대 (호연)"]
+  row2 = ["4세대 (신오)", "5세대 (하나)", "6세대 (칼로스)"]
+  row3 = ["7세대 (알로라)", "8세대 (가라르)", "9세대 (팔데아)"]
+  row4 = [None, "히스이 지방", None]  # 8세대(가라르) 바로 아래에 히스이 지방 배치
 
-    layout_rows = [row1, row2, row3, row4]
+  layout_rows = [row1, row2, row3, row4]
 
-    for r_idx, r_items in enumerate(layout_rows):
-      cols = st.columns(3)
-      for c_idx, g_name in enumerate(r_items):
-        if g_name is not None and g_name in CHARACTER_GENERATIONS:
-          g_info = CHARACTER_GENERATIONS[g_name]
-          with cols[c_idx]:
-            st.markdown(
-                f"""
-                <div class="char-banner" style="background-color: {g_info['color']};">
-                    {g_name}<br>
-                    <span style="font-size: 0.85rem; font-weight: normal;">주요 인물 및 관장 목록</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                f"{g_name} 인물 도감 입장",
-                key=f"char_gen_btn_{r_idx}_{c_idx}",
-                use_container_width=True,
-            ):
-              st.session_state.selected_char_gen = g_name
-              st.session_state.character_search_query = ""
-              st.rerun()
-
-  else:
-    g_name = st.session_state.selected_char_gen
-    g_data = CHARACTER_GENERATIONS[g_name]
-
-    col_back, col_title = st.columns([1, 4])
-    with col_back:
-      if st.button("◀ 세대 목록으로", use_container_width=True):
-        st.session_state.selected_char_gen = None
-        st.session_state.character_search_query = ""
-        st.rerun()
-    with col_title:
-      st.markdown(f"### 👤 {g_name} 인물 도감")
-
-    st.text_input(
-        f"{g_name} 인물 검색",
-        value=st.session_state.character_search_query,
-        key="char_user_input",
-        on_change=update_character_search,
-        placeholder=f"{g_name} 인물 이름을 입력하세요...",
-    )
-
-    query_text = str(st.session_state.character_search_query).strip()
-
-    characters = g_data["characters"]
-    if query_text:
-      characters = [
-          c for c in characters if query_text.lower() in c["name"].lower()
-      ]
-
-    if not characters:
-      st.warning(f"'{query_text}'에 해당하는 인물을 찾을 수 없습니다.")
-    else:
-      for char in characters:
-        st.markdown(
-            f"""
-            <div style="margin-bottom: 25px; border-bottom: 1px solid #e0e0e0; padding-bottom: 20px;">
-                <h3 style="margin-top: 0; color: #008275; margin-bottom: 6px;">{char['name']} <small style="font-size: 0.9rem; color: #666;">({char['title']})</small></h3>
-                <p style="margin: 4px 0;"><b>전문 분야:</b> {char['specialty']}</p>
-                <p style="margin: 4px 0;"><b>설명:</b> {char['desc']}</p>
-                <p style="margin: 4px 0;"><b>주요 포켓몬:</b> {', '.join(char['pokemon'])}</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+  for r_idx, r_items in enumerate(layout_rows):
+    cols = st.columns(3)
+    for c_idx, g_name in enumerate(r_items):
+      if g_name is not None and g_name in CHARACTER_GENERATIONS:
+        g_info = CHARACTER_GENERATIONS[g_name]
+        with cols[c_idx]:
+          st.markdown(
+              f"""
+              <div class="char-banner" style="background-color: {g_info['color']};">
+                  {g_name}<br>
+                  <span style="font-size: 0.85rem; font-weight: normal;">주요 인물 및 관장 목록</span>
+              </div>
+              """,
+              unsafe_allow_html=True,
+          )
 
 elif st.session_state.current_page == "맵 도감":
   st.title("🗺️ 맵 도감")
