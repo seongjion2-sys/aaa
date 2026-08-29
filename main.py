@@ -1798,12 +1798,12 @@ import streamlit as st
 
 # 페이지 기본 설정
 st.set_page_config(
-    page_title="세대별 포켓몬 도감 & 인물 사전",
+    page_title="세대별 포켓몬 인물 도감",
     page_icon="📖",
     layout="wide",
 )
 
-# 커스텀 CSS (어두운 테마, 카드형 레이아웃 스타일링)
+# 커스텀 CSS (카드형 레이아웃 및 다크 테마 스타일링)
 st.markdown(
     """
     <style>
@@ -1822,7 +1822,7 @@ st.markdown(
         font-size: 20px;
         font-weight: bold;
         color: #58a6ff;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
     }
     .person-info {
         color: #c9d1d9;
@@ -1833,17 +1833,6 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
-# 세대별 포켓몬 더미 데이터 (포켓몬 도감 탭용)
-POKEMON_DATA = {
-    "1세대 (관동)": [
-        {"no": "No.0001", "name": "이상해씨", "type": "풀/독"},
-        {"no": "No.0004", "name": "파이리", "type": "불꽃"},
-        {"no": "No.0007", "name": "꼬부기", "type": "물"},
-        {"no": "No.0025", "name": "피카츄", "type": "전기"},
-        {"no": "No.0006", "name": "리자몽", "type": "불꽃/비행"},
-    ]
-}
 
 # 세대별 주요 인물 데이터 (박사, 주인공, 라이벌, 관장, 사천왕 등)
 CHARACTER_DATA = {
@@ -1896,103 +1885,81 @@ CHARACTER_DATA = {
             "location": "석영고원 포켓몬리그",
             "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png",
         },
-    ]
+    ],
+    "2세대 (성도)": [
+        {
+            "name": "공박사",
+            "role": "포켓몬 연구소 박사",
+            "desc": "진화 연구의 권위자로, 무궁마을에 연구소를 두고 있습니다.",
+            "pokemon": "없음 (연구원)",
+            "location": "무궁마을 공박사 연구소",
+            "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/152.png",
+        },
+        {
+            "name": "심향",
+            "role": "주인공",
+            "desc": "연두마을 출신의 활기찬 성격의 트레이너입니다.",
+            "pokemon": "브케인, 리아코, 치코리타 등",
+            "location": "성도 지방 전역",
+            "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/155.png",
+        },
+    ],
 }
 
 # 상단 타이틀
-st.markdown("### 📖 세대별 포켓몬 도감 및 인물 사전")
+st.markdown("### 📖 세대별 포켓몬 인물 도감")
 st.markdown("---")
 
-# 상단 메뉴 선택 (포켓몬 도감 vs 세대별 인물 도감)
-menu = st.radio(
-    "메뉴 선택", ["포켓몬 도감", "세대별 주요 인물 도감"], horizontal=True
+# 세대 선택 박스
+selected_gen = st.selectbox("세대를 선택하세요", list(CHARACTER_DATA.keys()))
+
+# 인물 검색창
+search_query = st.text_input(
+    f"{selected_gen} 인물 이름을 입력하세요...", key="char_search"
 )
 
-if menu == "포켓몬 도감":
-    st.markdown("#### ⚡ 세대별 포켓몬 도감")
-    selected_gen_p = st.selectbox(
-        "세대를 선택하세요 (포켓몬)", list(POKEMON_DATA.keys())
-    )
-    search_pokemon = st.text_input(
-        f"{selected_gen_p} 범위 내 이름 또는 번호 입력..."
-    )
+st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown(
-        "<p style='color: #8b949e;'>포켓몬을 선택하거나 위 검색창에 이름을 입력하세요.</p>",
-        unsafe_allow_html=True,
-    )
+# 데이터 필터링 (검색어 반영)
+characters = CHARACTER_DATA[selected_gen]
+if search_query:
+    characters = [
+        c
+        for c in characters
+        if search_query in c["name"] or search_query in c["role"]
+    ]
 
-    # 포켓몬 버튼 그리드 예시
-    cols = st.columns(3)
-    pokemons = POKEMON_DATA[selected_gen_p]
-    if search_pokemon:
-        pokemons = [
-            p
-            for p in pokemons
-            if search_pokemon in p["name"] or search_pokemon in p["no"]
-        ]
+# 인물 카드 리스트 출력 (사진, 설명, 포켓몬, 위치가 함께 배치된 형태)
+for person in characters:
+    with st.container():
+        # 상단 이름 및 역할 제목 바
+        st.markdown(
+            f"""
+            <div class="person-card">
+                <div class="person-title">👤 {person['name']} <span style="font-size: 14px; color: #8b949e; font-weight: normal;">({person['role']})</span></div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    for idx, pock in enumerate(pokemons):
-        with cols[idx % 3]:
-            if st.button(f"{pock['no']} {pock['name']}", use_container_width=True):
-                st.info(
-                    f"선택한 포켓몬: {pock['name']} (타입: {pock['type']})"
-                )
+        # 좌우 컬럼 나누어 왼쪽은 사진, 오른쪽은 설명/포켓몬/위치 배치
+        col_img, col_detail = st.columns([1, 3])
 
-else:
-    # 세대별 인물 도감 영역
-    st.markdown("#### 👥 세대별 주요 인물 도감 (박사, 주인공, 라이벌, 관장, 사천왕)")
-    selected_gen_c = st.selectbox(
-        "세대를 선택하세요 (인물)", list(CHARACTER_DATA.keys())
-    )
+        with col_img:
+            st.image(
+                person["image"], caption=person["name"], use_container_width=True
+            )
 
-    # 인물 검색창 (두 번째 사진 참고)
-    search_query = st.text_input(
-        f"{selected_gen_c} 인물 이름을 입력하세요...", key="char_search"
-    )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # 데이터 필터링 (검색어 반영)
-    characters = CHARACTER_DATA[selected_gen_c]
-    if search_query:
-        characters = [
-            c
-            for c in characters
-            if search_query in c["name"] or search_query in c["role"]
-        ]
-
-    # 두 번째 사진 형태의 박스(카드) 레이아웃으로 인물 리스트 및 상세 정보 출력
-    for person in characters:
-        with st.container():
+        with col_detail:
             st.markdown(
                 f"""
-                <div class="person-card">
-                    <div class="person-title">{person['name']} <span style="font-size: 14px; color: #8b949e; font-weight: normal;">({person['role']})</span></div>
+                <div class="person-info">
+                    <b>설명:</b> {person['desc']}<br><br>
+                    <b>사용하는 포켓몬:</b> {person['pokemon']}<br><br>
+                    <b>출현 위치:</b> {person['location']}
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-            # 내부 상세 내용 (이미지 + 설명, 포켓몬, 위치)
-            col_img, col_detail = st.columns([1, 3])
-
-            with col_img:
-                st.image(
-                    person["image"],
-                    caption=person["name"],
-                    use_container_width=True,
-                )
-
-            with col_detail:
-                st.markdown(
-                    f"""
-                    <div class="person-info">
-                        <b>설명:</b> {person['desc']}<br><br>
-                        <b>사용하는 포켓몬:</b> {person['pokemon']}<br><br>
-                        <b>위치:</b> {person['location']}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
