@@ -570,6 +570,26 @@ def get_special_forms(species_data, base_ko_name, species_name):
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name}"
       form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
+    elif "-primal" in v_name:
+      form_type = "원시회귀"
+      form_ko_title = f"원시{base_ko_name}"
+      form_desc = (
+          "고대의 원시 에너지를 되찾아 본래의 압도적인 힘을 발휘하는 모습입니다."
+      )
+    elif "-unbound" in v_name:
+      form_type = "해방폼"
+      form_ko_name = "후파" if "hoopa" in v_name else base_ko_name
+      form_ko_title = f"{form_ko_name} (해방된 모습)"
+      form_desc = (
+          "원래의 끔찍하고 거대한 원래의 모습을 되찾아 모든 것을 꿰뚫는"
+          " 파괴력을 가집니다."
+      )
+    elif "-eternal" in v_name:
+      form_type = "영원의꽃"
+      form_ko_title = f"{base_ko_name} (영원의 꽃)"
+      form_desc = (
+          "3천 년 전 왕이 건네주었다는 특별한 영원의 꽃을 품고 있는 모습입니다."
+      )
     elif "ash" in v_name:
       form_type = "유대진화"
       form_ko_title = f"{base_ko_name} (지우개굴닌자)"
@@ -1142,7 +1162,6 @@ elif st.session_state.current_page == "포켓몬 도감":
         "<h3 class='section-title'>📦 세대별 도감 선택</h3>", unsafe_allow_html=True
     )
 
-    # 1~9세대 카드(3열씩 3줄 = 9개) + 10번째 칸(전국 도감) 출력 루프
     all_menu_items = list(GENERATIONS.keys()) + ["전국 도감"]
 
     for r in range(4):
