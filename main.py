@@ -203,19 +203,6 @@ CHARACTER_GENERATIONS = {
             }
         ],
     },
-    "9세대 (팔데아)": {
-        "color": "#C2185B",
-        "characters": [
-            {
-                "name": "모니카",
-                "title": "보울시티 체육관 관장",
-                "type": "풀",
-                "specialty": "풀 타입 포켓몬 전문",
-                "desc": "올리브 농장을 운영하며 마을을 사랑하는 관장입니다.",
-                "pokemon": ["올리비"],
-            }
-        ],
-    },
     "히스이 지방": {
         "color": "#5C5470",
         "characters": [
@@ -242,10 +229,47 @@ CHARACTER_GENERATIONS = {
                 ),
                 "pokemon": ["잠만보"],
             },
+            {
+                "name": "윤열",
+                "title": "은하단 단장",
+                "type": "기타",
+                "specialty": "종합 전투력",
+                "desc": (
+                    "엄격하고 카리스마 넘치는 은하단의 최고 수장으로,"
+                    " 히스이지방의 혹독한 환경 속에서 사람과 포켓몬의"
+                    " 공존을 위해 철저함을 유지합니다."
+                ),
+                "pokemon": ["픽시", "윈디"],
+            },
+            {
+                "name": "폐기",
+                "title": "은하단 조사대 리더",
+                "type": "에스퍼",
+                "specialty": "지략 및 분석",
+                "desc": (
+                    "주인공을 은하단에 영입해 준 장본인이자, 마을과"
+                    " 조사대를 이끄는 든든한 리더입니다."
+                ),
+                "pokemon": ["레트라", "후딘"],
+            },
+        ],
+    },
+    "9세대 (팔데아)": {
+        "color": "#C2185B",
+        "characters": [
+            {
+                "name": "모니카",
+                "title": "보울시티 체육관 관장",
+                "type": "풀",
+                "specialty": "풀 타입 포켓몬 전문",
+                "desc": "올리브 농장을 운영하며 마을을 사랑하는 관장입니다.",
+                "pokemon": ["올리비"],
+            }
         ],
     },
 }
 
+# 한글 추천 포켓몬을 위한 영문 매핑
 FEATURED_POKEMON_MAP = {
     "켄타로스": "tauros",
     "식스테일": "vulpix",
@@ -256,6 +280,7 @@ FEATURED_POKEMON_MAP = {
 }
 
 
+# 페이지 이동 함수
 def go_to_page(page_name):
   st.session_state.current_page = page_name
   if page_name == "포켓몬 도감":
@@ -264,6 +289,7 @@ def go_to_page(page_name):
     st.session_state.selected_char_gen = None
 
 
+# 검색어 기록 추가 함수
 def add_search_history(query):
   query = query.strip()
   if query:
@@ -284,6 +310,7 @@ def add_character_search_history(query):
       st.session_state.character_search_history.pop()
 
 
+# 검색어 업데이트 콜백
 def update_search():
   query = st.session_state.user_input
   st.session_state.search_query = query
@@ -307,7 +334,7 @@ def update_character_search():
     add_character_search_history(query)
 
 
-# CSS 스타일
+# CSS 스타일 적용
 st.markdown(
     """
     <style>
@@ -1714,11 +1741,11 @@ elif st.session_state.current_page == "인물 도감":
         unsafe_allow_html=True,
     )
 
-    # 9세대는 8세대 우측, 히스이 지방은 8세대 아래에 배치된 레이아웃 구조
+    # 9세대는 원래 자리(7세대 아래), 히스이 지방은 8세대 아래에 위치하도록 레이아웃 수정
     row1 = ["1세대 (관동)", "2세대 (성도)", "3세대 (호연)"]
     row2 = ["4세대 (신오)", "5세대 (하나)", "6세대 (칼로스)"]
-    row3 = ["7세대 (알로라)", "8세대 (가라르)", "9세대 (팔데아)"]
-    row4 = [None, "히스이 지방", None]
+    row3 = ["7세대 (알로라)", "8세대 (가라르)", None]
+    row4 = ["9세대 (팔데아)", None, "히스이 지방"]
 
     layout_rows = [row1, row2, row3, row4]
 
