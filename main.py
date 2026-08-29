@@ -443,13 +443,6 @@ st.markdown(
         margin-bottom: 10px;
         font-size: 1.2rem;
     }
-    .char-card {
-        border: 2px solid #e0e0e0;
-        border-radius: 10px;
-        padding: 20px;
-        background-color: #f8f9fa;
-        margin-bottom: 15px;
-    }
     .type-table {
         width: 100%;
         border-collapse: collapse;
@@ -1741,11 +1734,10 @@ elif st.session_state.current_page == "인물 도감":
         unsafe_allow_html=True,
     )
 
-    # 9세대는 원래 자리(8세대 우측)에 두고, 히스이 지방을 8세대 아래로 배치
     row1 = ["1세대 (관동)", "2세대 (성도)", "3세대 (호연)"]
     row2 = ["4세대 (신오)", "5세대 (하나)", "6세대 (칼로스)"]
     row3 = ["7세대 (알로라)", "8세대 (가라르)", "9세대 (팔데아)"]
-    row4 = [None, "히스이 지방", None]  # 8세대(가라르) 바로 아래에 히스이 지방 배치
+    row4 = [None, "히스이 지방", None]
 
     layout_rows = [row1, row2, row3, row4]
 
@@ -1808,11 +1800,11 @@ elif st.session_state.current_page == "인물 도감":
       for char in characters:
         st.markdown(
             f"""
-            <div class="char-card">
-                <h3 style="margin-top: 0; color: #008275;">{char['name']} <small style="font-size: 0.9rem; color: #666;">({char['title']})</small></h3>
-                <p><b>전문 분야:</b> {char['specialty']}</p>
-                <p><b>설명:</b> {char['desc']}</p>
-                <p><b>주요 포켓몬:</b> {', '.join(char['pokemon'])}</p>
+            <div style="margin-bottom: 25px; border-bottom: 1px solid #e0e0e0; padding-bottom: 20px;">
+                <h3 style="margin-top: 0; color: #008275; margin-bottom: 6px;">{char['name']} <small style="font-size: 0.9rem; color: #666;">({char['title']})</small></h3>
+                <p style="margin: 4px 0;"><b>전문 분야:</b> {char['specialty']}</p>
+                <p style="margin: 4px 0;"><b>설명:</b> {char['desc']}</p>
+                <p style="margin: 4px 0;"><b>주요 포켓몬:</b> {', '.join(char['pokemon'])}</p>
             </div>
             """,
             unsafe_allow_html=True,
