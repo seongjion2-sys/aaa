@@ -1762,6 +1762,11 @@ elif st.session_state.current_page == "인물 도감":
               """,
               unsafe_allow_html=True,
           )
+          st.button(
+              f"{g_name} 인물 도감 입장",
+              key=f"char_gen_btn_{r_idx}_{c_idx}",
+              use_container_width=True,
+          )
 
 elif st.session_state.current_page == "맵 도감":
   st.title("🗺️ 맵 도감")
