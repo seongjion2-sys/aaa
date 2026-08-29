@@ -570,12 +570,6 @@ def get_special_forms(species_data, base_ko_name, species_name):
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name}"
       form_desc = "메가스톤을 이용해 한계를 넘어선 진화를 이룹니다."
-    elif "-gmax" in v_name:
-      form_type = "거다이맥스"
-      form_ko_title = f"{base_ko_name} (거다이맥스)"
-      form_desc = (
-          "가라르지방 특유의 현상으로 거대하게 거대화하며 모습이 바뀐 형태입니다."
-      )
     elif "-primal" in v_name:
       form_type = "원시회귀"
       form_ko_title = f"원시{base_ko_name}"
