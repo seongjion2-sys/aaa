@@ -1821,3 +1821,4 @@ elif st.session_state.current_page == "인물 도감":
 elif st.session_state.current_page == "맵 도감":
   st.title("🗺️ 맵 도감")
   st.info("준비 중인 페이지입니다.")
+```[cite: 3]
