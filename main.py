@@ -539,7 +539,7 @@ def get_special_forms(species_data, base_ko_name, species_name):
     is_default = v.get("is_default", False)
     v_name = v["pokemon"]["name"]
 
-    if is_default or "paldea" in v_name:
+    if is_default:
       continue
 
     form_type = ""
@@ -558,6 +558,10 @@ def get_special_forms(species_data, base_ko_name, species_name):
       form_type = "히스이폼"
       form_ko_title = f"{base_ko_name} (히스이의 모습)"
       form_desc = "과거 히스이지방의 대자연 속에서 살아오며 변화한 모습입니다."
+    elif "-paldea" in v_name:
+      form_type = "팔데아폼"
+      form_ko_title = f"{base_ko_name} (팔데아의 모습)"
+      form_desc = "팔데아지방의 풍토와 환경에 맞춰 적응하고 살아가는 모습입니다."
     elif "-mega-x" in v_name:
       form_type = "메가진화"
       form_ko_title = f"메가{base_ko_name} X"
@@ -1343,7 +1347,7 @@ elif st.session_state.current_page == "포켓몬 도감":
               with col1:
                 st.markdown(
                     "<h3 class='section-title'>1. 개요 및 도감 설명</h3>",
-                    unsafe_allow_html=True,
+                    unsafe_allow_html=Type,  # type: ignore
                 )
                 st.info(form_info["desc"])
 
