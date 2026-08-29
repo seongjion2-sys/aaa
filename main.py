@@ -203,6 +203,57 @@ CHARACTER_GENERATIONS = {
             }
         ],
     },
+    "히스이 지방": {
+        "color": "#5C5470",
+        "characters": [
+            {
+                "name": "반죽",
+                "title": "은하단 조사대 캡틴",
+                "type": "격투",
+                "specialty": "격투 타입 포켓몬 및 육체 단련",
+                "desc": (
+                    "금강단 소속이자 은하단 캡틴으로, 흑요의 들판에서"
+                    " 왕을 모시며 주인공의 조력자가 되어 주는 호쾌한"
+                    " 인물입니다."
+                ),
+                "pokemon": ["창파나이트", "알통몬"],
+            },
+            {
+                "name": "주이",
+                "title": "은하단 의료대 캡틴",
+                "type": "노멀",
+                "specialty": "치유 및 포켓몬 관리",
+                "desc": (
+                    "진주단 출신으로 콧등의 흉터가 특징이며, 다소 쌀쌀맞아"
+                    " 보이지만 포켓몬들을 깊이 아끼는 캡틴입니다."
+                ),
+                "pokemon": ["잠만보"],
+            },
+            {
+                "name": "윤열",
+                "title": "은하단 단장",
+                "type": "기타",
+                "specialty": "종합 전투력",
+                "desc": (
+                    "엄격하고 카리스마 넘치는 은하단의 최고 수장으로,"
+                    " 히스이지방의 혹독한 환경 속에서 사람과 포켓몬의"
+                    " 공존을 위해 철저함을 유지합니다."
+                ),
+                "pokemon": ["픽시", "윈디"],
+            },
+            {
+                "name": "폐기",
+                "title": "은하단 조사대 리더",
+                "type": "에스퍼",
+                "specialty": "지략 및 분석",
+                "desc": (
+                    "주인공을 은하단에 영입해 준 장본인이자, 마을과"
+                    " 조사대를 이끄는 든든한 리더입니다."
+                ),
+                "pokemon": ["레트라", "후딘"],
+            },
+        ],
+    },
     "9세대 (팔데아)": {
         "color": "#C2185B",
         "characters": [
@@ -1692,7 +1743,7 @@ elif st.session_state.current_page == "인물 도감":
 
     all_char_gens = list(CHARACTER_GENERATIONS.keys())
 
-    for r in range(3):
+    for r in range(4):
       cols = st.columns(3)
       for c in range(3):
         idx = r * 3 + c
