@@ -1741,16 +1741,21 @@ elif st.session_state.current_page == "인물 도감":
         unsafe_allow_html=True,
     )
 
-    all_char_gens = list(CHARACTER_GENERATIONS.keys())
+    # 행 단위 커스텀 그리드 배치 (8세대 아래에 히스이를 두고 약간의 시각적 틈 제공)
+    row1 = ["1세대 (관동)", "2세대 (성도)", "3세대 (호연)"]
+    row2 = ["4세대 (신오)", "5세대 (하나)", "6세대 (칼로스)"]
+    row3 = ["7세대 (알로라)", "8세대 (가라르)", None]  # 3번째 칸 비움
+    row4 = ["히스이 지방", None, None]  # 히스이 지방을 아래 행으로 내림
+    row5 = ["9세대 (팔데아)", None, None]
 
-    for r in range(4):
+    layout_rows = [row1, row2, row3, row4, row5]
+
+    for r_idx, r_items in enumerate(layout_rows):
       cols = st.columns(3)
-      for c in range(3):
-        idx = r * 3 + c
-        if idx < len(all_char_gens):
-          g_name = all_char_gens[idx]
+      for c_idx, g_name in enumerate(r_items):
+        if g_name is not None and g_name in CHARACTER_GENERATIONS:
           g_info = CHARACTER_GENERATIONS[g_name]
-          with cols[c]:
+          with cols[c_idx]:
             st.markdown(
                 f"""
                 <div class="char-banner" style="background-color: {g_info['color']};">
@@ -1762,7 +1767,7 @@ elif st.session_state.current_page == "인물 도감":
             )
             if st.button(
                 f"{g_name} 인물 도감 입장",
-                key=f"char_gen_btn_{idx}",
+                key=f"char_gen_btn_{r_idx}_{c_idx}",
                 use_container_width=True,
             ):
               st.session_state.selected_char_gen = g_name
