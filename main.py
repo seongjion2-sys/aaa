@@ -203,6 +203,19 @@ CHARACTER_GENERATIONS = {
             }
         ],
     },
+    "9세대 (팔데아)": {
+        "color": "#C2185B",
+        "characters": [
+            {
+                "name": "모니카",
+                "title": "보울시티 체육관 관장",
+                "type": "풀",
+                "specialty": "풀 타입 포켓몬 전문",
+                "desc": "올리브 농장을 운영하며 마을을 사랑하는 관장입니다.",
+                "pokemon": ["올리비"],
+            }
+        ],
+    },
     "히스이 지방": {
         "color": "#5C5470",
         "characters": [
@@ -252,19 +265,6 @@ CHARACTER_GENERATIONS = {
                 ),
                 "pokemon": ["레트라", "후딘"],
             },
-        ],
-    },
-    "9세대 (팔데아)": {
-        "color": "#C2185B",
-        "characters": [
-            {
-                "name": "모니카",
-                "title": "보울시티 체육관 관장",
-                "type": "풀",
-                "specialty": "풀 타입 포켓몬 전문",
-                "desc": "올리브 농장을 운영하며 마을을 사랑하는 관장입니다.",
-                "pokemon": ["올리비"],
-            }
         ],
     },
 }
@@ -1741,14 +1741,13 @@ elif st.session_state.current_page == "인물 도감":
         unsafe_allow_html=True,
     )
 
-    # 행 단위 커스텀 그리드 배치 (8세대 아래에 히스이를 두고 약간의 시각적 틈 제공)
+    # 9세대는 원래 자리(8세대 우측)에 두고, 히스이 지방을 8세대 아래로 배치
     row1 = ["1세대 (관동)", "2세대 (성도)", "3세대 (호연)"]
     row2 = ["4세대 (신오)", "5세대 (하나)", "6세대 (칼로스)"]
-    row3 = ["7세대 (알로라)", "8세대 (가라르)", None]  # 3번째 칸 비움
-    row4 = ["히스이 지방", None, None]  # 히스이 지방을 아래 행으로 내림
-    row5 = ["9세대 (팔데아)", None, None]
+    row3 = ["7세대 (알로라)", "8세대 (가라르)", "9세대 (팔데아)"]
+    row4 = [None, "히스이 지방", None]  # 8세대(가라르) 바로 아래에 히스이 지방 배치
 
-    layout_rows = [row1, row2, row3, row4, row5]
+    layout_rows = [row1, row2, row3, row4]
 
     for r_idx, r_items in enumerate(layout_rows):
       cols = st.columns(3)
