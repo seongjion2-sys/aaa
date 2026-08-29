@@ -1747,6 +1747,9 @@ elif st.session_state.current_page == "인물 도감":
 
   layout_rows = [row1, row2, row3, row4]
 
+  if "char_gen_notice" not in st.session_state:
+    st.session_state.char_gen_notice = None
+
   for r_idx, r_items in enumerate(layout_rows):
     cols = st.columns(3)
     for c_idx, g_name in enumerate(r_items):
@@ -1762,11 +1765,18 @@ elif st.session_state.current_page == "인물 도감":
               """,
               unsafe_allow_html=True,
           )
-          st.button(
+          if st.button(
               f"{g_name} 인물 도감 입장",
               key=f"char_gen_btn_{r_idx}_{c_idx}",
               use_container_width=True,
-          )
+          ):
+            st.session_state.char_gen_notice = g_name
+
+  if st.session_state.char_gen_notice:
+    st.markdown(
+        f"### 👤 {st.session_state.char_gen_notice} 인물 도감"
+    )
+    st.info("준비 중인 페이지입니다.")
 
 elif st.session_state.current_page == "맵 도감":
   st.title("🗺️ 맵 도감")
