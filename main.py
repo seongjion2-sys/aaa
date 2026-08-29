@@ -19,8 +19,17 @@ if "selected_gen" not in st.session_state:
 if "search_history" not in st.session_state:
   st.session_state.search_history = []
 
+if "character_search_query" not in st.session_state:
+  st.session_state.character_search_query = ""
 
-# 세대별 범위 정의
+if "selected_char_gen" not in st.session_state:
+  st.session_state.selected_char_gen = None
+
+if "character_search_history" not in st.session_state:
+  st.session_state.character_search_history = []
+
+
+# 세대별 범위 정의 (포켓몬)
 GENERATIONS = {
     "1세대 (관동)": {"range": (1, 151), "color": "#FF5959"},
     "2세대 (성도)": {"range": (152, 251), "color": "#FF8C42"},
@@ -31,6 +40,182 @@ GENERATIONS = {
     "7세대 (알로라)": {"range": (722, 809), "color": "#FF7043"},
     "8세대 (가라르)": {"range": (810, 905), "color": "#00838F"},
     "9세대 (팔데아)": {"range": (906, 1025), "color": "#C2185B"},
+}
+
+# 세대별 주요 인물 데이터 (체육관 관장, 챔피언, 주요 트레이너 등)
+CHARACTER_GENERATIONS = {
+    "1세대 (관동)": {
+        "color": "#FF5959",
+        "characters": [
+            {
+                "name": "웅",
+                "title": "회색시티 체육관 관장",
+                "type": "바위",
+                "specialty": "바위 타입 포켓몬을 다루는 관장",
+                "desc": (
+                    "단단한 정신력과 바위처럼 묵직한 포켓몬 전투를 구사하는"
+                    " 포켓몬 브리더입니다."
+                ),
+                "pokemon": ["꼬마돌", "롱스톤"],
+            },
+            {
+                "name": "이슬",
+                "title": "블루시티 체육관 관장",
+                "type": "물",
+                "specialty": "물 타입 포켓몬 전문",
+                "desc": (
+                    "물 속의 요정이라 불리며, 활기차고 당찬 성격의 체육관"
+                    " 관장입니다."
+                ),
+                "pokemon": ["별가람", "아쿠스타"],
+            },
+            {
+                "name": "레드",
+                "title": "전설의 포켓몬 트레이너",
+                "type": "기타",
+                "specialty": "올라운더",
+                "desc": (
+                    "태초마을 출신으로, 관동 지방을 모험하며 포켓몬 리그를"
+                    " 제패한 전설적인 트레이너입니다."
+                ),
+                "pokemon": ["피카츄", "리자몽", "잠만보"],
+            },
+        ],
+    },
+    "2세대 (성도)": {
+        "color": "#FF8C42",
+        "characters": [
+            {
+                "name": "죽란",
+                "title": "도라지시티 체육관 관장",
+                "type": "비행",
+                "specialty": "비행 타입 포켓몬 전문",
+                "desc": "하늘을 나는 포켓몬을 사랑하는 우아한 관장입니다.",
+                "pokemon": ["구구", "야부엉"],
+            },
+            {
+                "name": "호일",
+                "title": "고마도시티 체육관 관장",
+                "type": "벌레",
+                "specialty": "벌레 타입 포켓몬 전문",
+                "desc": "벌레 포켓몬 연구에 열정적인 소년 관장입니다.",
+                "pokemon": ["단데기", "스라크"],
+            },
+        ],
+    },
+    "3세대 (호연)": {
+        "color": "#F3C623",
+        "characters": [
+            {
+                "name": "원규",
+                "title": "금시티 체육관 관장",
+                "type": "바위",
+                "specialty": "바위 타입 포켓몬 전문",
+                "desc": "바위와 지질학에 조예가 깊은 우수한 학생 관장입니다.",
+                "pokemon": ["꼬마돌", "코코파스"],
+            },
+            {
+                "name": "철헌",
+                "title": "무로시티 체육관 관장",
+                "type": "격투",
+                "specialty": "격투 타입 포켓몬 전문",
+                "desc": "서핑과 격투기를 즐기는 시원시원한 성격의 관장입니다.",
+                "pokemon": ["알통몬", "마하펀치"],
+            },
+        ],
+    },
+    "4세대 (신오)": {
+        "color": "#1089FF",
+        "characters": [
+            {
+                "name": "강석",
+                "title": "무쇠시티 체육관 관장",
+                "type": "바위",
+                "specialty": "바위 타입 포켓몬 전문",
+                "desc": "탄광업이 발달한 무쇠시티를 이끄는 든든한 관장입니다.",
+                "pokemon": ["꼬마돌", "두개도스"],
+            },
+            {
+                "name": "유채",
+                "title": "영원시티 체육관 관장",
+                "type": "풀",
+                "specialty": "풀 타입 포켓몬 전문",
+                "desc": "풀 포켓몬과 대자연을 사랑하는 밝은 성격의 관장입니다.",
+                "pokemon": ["체리버", "로즈레이드"],
+            },
+        ],
+    },
+    "5세대 (하나)": {
+        "color": "#628E90",
+        "characters": [
+            {
+                "name": "덴트",
+                "title": "삼요시티 체육관 관장",
+                "type": "풀",
+                "specialty": "풀 타입 포켓몬 전문",
+                "desc": "소믈리에 능력을 지닌 삼형제 관장 중 첫째입니다.",
+                "pokemon": ["야나프"],
+            }
+        ],
+    },
+    "6세대 (칼로스)": {
+        "color": "#7B1FA2",
+        "characters": [
+            {
+                "name": "시트론",
+                "title": "미로시티 체육관 관장",
+                "type": "전기",
+                "specialty": "전기 타입 포켓몬 및 발명품",
+                "desc": "과학 발명을 사랑하는 천재 소년 관장입니다.",
+                "pokemon": ["레코디", "일레도리자드"],
+            }
+        ],
+    },
+    "7세대 (알로라)": {
+        "color": "#FF7043",
+        "characters": [
+            {
+                "name": "릴리",
+                "title": "수수께끼의 소녀",
+                "type": "기타",
+                "specialty": "서포터",
+                "desc": (
+                    "포켓몬을 무서워했으나 주인공과 만나며 용기를 얻고"
+                    " 성장하는 소녀입니다."
+                ),
+                "pokemon": ["코스모스"],
+            }
+        ],
+    },
+    "8세대 (가라르)": {
+        "color": "#00838F",
+        "characters": [
+            {
+                "name": "야청",
+                "title": "너클시티/원더시티 체육관 관장",
+                "type": "물",
+                "specialty": "물 타입 포켓몬 전문",
+                "desc": (
+                    "평소에는 차분하지만 배틀 시에는 승부욕이 불타오르는"
+                    " 패션 모델 겸 관장입니다."
+                ),
+                "pokemon": ["갈가부기", "드레디어"],
+            }
+        ],
+    },
+    "9세대 (팔데아)": {
+        "color": "#C2185B",
+        "characters": [
+            {
+                "name": "모니카",
+                "title": "보울시티 체육관 관장",
+                "type": "풀",
+                "specialty": "풀 타입 포켓몬 전문",
+                "desc": "올리브 농장을 운영하며 마을을 사랑하는 관장입니다.",
+                "pokemon": ["올리비"],
+            }
+        ],
+    },
 }
 
 # 한글 추천 포켓몬을 위한 영문 매핑
@@ -49,6 +234,8 @@ def go_to_page(page_name):
   st.session_state.current_page = page_name
   if page_name == "포켓몬 도감":
     st.session_state.selected_gen = None
+  elif page_name == "인물 도감":
+    st.session_state.selected_char_gen = None
 
 
 # 검색어 기록 추가 함수
@@ -60,6 +247,16 @@ def add_search_history(query):
     st.session_state.search_history.insert(0, query)
     if len(st.session_state.search_history) > 10:
       st.session_state.search_history.pop()
+
+
+def add_character_search_history(query):
+  query = query.strip()
+  if query:
+    if query in st.session_state.character_search_history:
+      st.session_state.character_search_history.remove(query)
+    st.session_state.character_search_history.insert(0, query)
+    if len(st.session_state.character_search_history) > 10:
+      st.session_state.character_search_history.pop()
 
 
 # 검색어 업데이트 콜백
@@ -77,6 +274,13 @@ def update_national_search():
   st.session_state.current_page = "전국 도감"
   if query.strip():
     add_search_history(query)
+
+
+def update_character_search():
+  query = st.session_state.char_user_input
+  st.session_state.character_search_query = query
+  if query.strip():
+    add_character_search_history(query)
 
 
 # CSS 스타일 적용
@@ -178,7 +382,7 @@ st.markdown(
         align-items: center;
         justify-content: center;
     }
-    .gen-banner {
+    .gen-banner, .char-banner {
         border-radius: 12px;
         padding: 25px 15px;
         text-align: center;
@@ -187,6 +391,13 @@ st.markdown(
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         margin-bottom: 10px;
         font-size: 1.2rem;
+    }
+    .char-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        margin-bottom: 15px;
     }
     .type-table {
         width: 100%;
@@ -842,6 +1053,9 @@ if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
 if st.sidebar.button("📖 세대별 도감", use_container_width=True):
   go_to_page("포켓몬 도감")
 
+if st.sidebar.button("👤 인물 도감", use_container_width=True):
+  go_to_page("인물 도감")
+
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🕒 최근 검색 기록")
 if st.session_state.search_history:
@@ -1464,8 +1678,90 @@ elif st.session_state.current_page == "포켓몬 도감":
         )
 
 elif st.session_state.current_page == "인물 도감":
-  st.title("👤 인물 도감")
-  st.info("준비 중인 페이지입니다.")
+  st.title("👤 세대별 인물 도감")
+
+  if not st.session_state.selected_char_gen:
+    st.write(
+        "**원하시는 세대를 선택하여 해당 세대에 등장하는 주요 인물 및 관장"
+        " 정보를 탐색하세요.**"
+    )
+    st.markdown(
+        "<h3 class='section-title'>📦 세대별 인물 도감 선택</h3>",
+        unsafe_allow_html=True,
+    )
+
+    all_char_gens = list(CHARACTER_GENERATIONS.keys())
+
+    for r in range(3):
+      cols = st.columns(3)
+      for c in range(3):
+        idx = r * 3 + c
+        if idx < len(all_char_gens):
+          g_name = all_char_gens[idx]
+          g_info = CHARACTER_GENERATIONS[g_name]
+          with cols[c]:
+            st.markdown(
+                f"""
+                <div class="char-banner" style="background-color: {g_info['color']};">
+                    {g_name}<br>
+                    <span style="font-size: 0.85rem; font-weight: normal;">주요 인물 및 관장 목록</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                f"{g_name} 인물 도감 입장",
+                key=f"char_gen_btn_{idx}",
+                use_container_width=True,
+            ):
+              st.session_state.selected_char_gen = g_name
+              st.session_state.character_search_query = ""
+              st.rerun()
+
+  else:
+    g_name = st.session_state.selected_char_gen
+    g_data = CHARACTER_GENERATIONS[g_name]
+
+    col_back, col_title = st.columns([1, 4])
+    with col_back:
+      if st.button("◀ 세대 목록으로", use_container_width=True):
+        st.session_state.selected_char_gen = None
+        st.session_state.character_search_query = ""
+        st.rerun()
+    with col_title:
+      st.markdown(f"### 👤 {g_name} 인물 도감")
+
+    st.text_input(
+        f"{g_name} 인물 검색",
+        value=st.session_state.character_search_query,
+        key="char_user_input",
+        on_change=update_character_search,
+        placeholder=f"{g_name} 인물 이름을 입력하세요...",
+    )
+
+    query_text = str(st.session_state.character_search_query).strip()
+
+    characters = g_data["characters"]
+    if query_text:
+      characters = [
+          c for c in characters if query_text.lower() in c["name"].lower()
+      ]
+
+    if not characters:
+      st.warning(f"'{query_text}'에 해당하는 인물을 찾을 수 없습니다.")
+    else:
+      for char in characters:
+        st.markdown(
+            f"""
+            <div class="char-card">
+                <h3 style="margin-top: 0; color: #008275;">{char['name']} <small style="font-size: 0.9rem; color: #666;">({char['title']})</small></h3>
+                <p><b>전문 분야:</b> {char['specialty']}</p>
+                <p><b>설명:</b> {char['desc']}</p>
+                <p><b>주요 포켓몬:</b> {', '.join(char['pokemon'])}</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 elif st.session_state.current_page == "맵 도감":
   st.title("🗺️ 맵 도감")
