@@ -1794,3 +1794,157 @@ elif st.session_state.current_page == "인물 도감":
 elif st.session_state.current_page == "맵 도감":
   st.title("🗺️ 맵 도감")
   st.info("준비 중인 페이지입니다.")
+import streamlit as st
+
+# 페이지 기본 설정
+st.set_page_config(
+    page_title="세대별 포켓몬 도감 & 인물 사전",
+    page_icon="📖",
+    layout="wide",
+)
+
+# 커스텀 CSS (어두운 테마와 사진 속 버튼 스타일 맞춤)
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #0e1117;
+        color: #ffffff;
+    }
+    .character-card {
+        background-color: #161b22;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #30363d;
+        margin-bottom: 20px;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
+
+# 세대별 주요 인물 데이터 (예시: 1세대 관동 지방)
+CHARACTER_DATA = {
+    "1세대 (관동)": {
+        "오박사 (박사)": {
+            "desc": "포켓몬 연구의 권위자로, 태초마을에 연구소를 두고 있으며 신참 트레이너에게 포켓몬과 도감을 건네준다.",
+            "pokemon": "없음 (연구원)",
+            "location": "태초마을 오박사 연구소",
+            "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",  # 예시 이미지 링크 (실제 이미지 경로로 대체 가능)
+        },
+        "레드 (주인공)": {
+            "desc": "태초마을 출신의 전설적인 포켓몬 트레이너. 말수가 적고 실력으로 증명한다.",
+            "pokemon": "피카츄, 리자몽, 잠만보, 라프라스 등",
+            "location": "태초마을 (포켓몬스터 HGSS에서는 은빛산 정상)",
+            "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png",
+        },
+        "그린 (라이벌)": {
+            "desc": "레드의 라이벌이자 오박사의 손자. 자존심이 강하고 언제나 한 발 앞서 주인공을 가로막는다.",
+            "pokemon": "피죤투, 나인테일, 파르셀, 괴력몬, 나시, 리자몽",
+            "location": "상록시티 포켓몬 짐 (관장)",
+            "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/9.png",
+        },
+        "웅 (관장)": {
+            "desc": "회색시티의 체육관 관장. 바위 타입 포켓몬을 구사하며 끈기 있는 배틀을 지향한다.",
+            "pokemon": "꼬마돌, 롱스톤",
+            "location": "회색시티 체육관",
+            "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/74.png",
+        },
+        "목호 (사천왕/챔피언)": {
+            "desc": "드래곤 타입 포켓몬을 다루는 포켓몬리그 사천왕이자 챔피언.",
+            "pokemon": "갸라도스, 망나뇽, 프테라 등",
+            "location": "석영고원 포켓몬리그",
+            "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png",
+        },
+    }
+}
+
+# 상단 타이틀
+st.markdown("### 📖 세대별 포켓몬 도감 및 인물 사전")
+st.markdown("---")
+
+# 상단 네비게이션 또는 모드 선택 (포켓몬 도감 vs 인물 도감)
+menu = st.radio(
+    "메뉴 선택", ["포켓몬 도감", "세대별 주요 인물 도감"], horizontal=True
+)
+
+if menu == "포켓몬 도감":
+    st.markdown("#### ⚡ 1세대 (관동) 도감 (No.1 ~ No.151)")
+    # 업로드해주신 사진의 검색창 및 버튼 그리드 UI 영역
+    search_query = st.text_input(
+        "1세대 (관동) 범위 내 이름 또는 번호 입력 (No.1~151)..."
+    )
+
+    st.markdown(
+        "<p style='color: #8b949e;'>포켓몬을 선택하거나 위 검색창에 이름을 입력하세요.</p>",
+        unsafe_allow_html=True,
+    )
+
+    # 예시 버튼 그리드 (사진의 레이아웃 재현)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("No.0001 이상해씨", use_container_width=True):
+            st.info("이상해씨 정보 출력 영역")
+    with col2:
+        if st.button("No.0004 파이리", use_container_width=True):
+            st.info("파이리 정보 출력 영역")
+    with col3:
+        if st.button("No.0007 꼬부기", use_container_width=True):
+            st.info("꼬부기 정보 출력 영역")
+
+else:
+    st.markdown("#### 👥 세대별 인물 정보 (박사, 주인공, 라이벌, 관장, 사천왕)")
+
+    # 세대 선택
+    selected_gen = st.selectbox(
+        "세대를 선택하세요", list(CHARACTER_DATA.keys())
+    )
+
+    st.markdown(
+        "<p style='color: #8b949e;'>인물을 선택하면 상세 정보와 포켓몬, 위치가 표시됩니다.</p>",
+        unsafe_allow_html=True,
+    )
+
+    # 인물 목록 버튼 레이아웃
+    characters = list(CHARACTER_DATA[selected_gen].keys())
+
+    # 세션 스테이트를 이용해 선택한 인물 기억
+    if "selected_char" not in st.session_state:
+        st.session_state.selected_char = characters[0]
+
+    # 버튼형 그리드로 인물 선택 구현
+    cols = st.columns(len(characters))
+    for i, char_name in enumerate(characters):
+        with cols[i]:
+            if st.button(char_name, use_container_width=True):
+                st.session_state.selected_char = char_name
+
+    st.markdown("---")
+
+    # 선택된 인물의 상세 정보 표시 (사진 + 설명 + 포켓몬 + 위치)
+    current_char = st.session_state.selected_char
+    char_info = CHARACTER_DATA[selected_gen][current_char]
+
+    st.markdown(f"### 🔍 {current_char} 상세 정보")
+
+    col_img, col_desc = st.columns([1, 2])
+
+    with col_img:
+        # 인물/포켓몬 사진 표시
+        st.image(
+            char_info["image"],
+            caption=current_char,
+            use_column_width=True,
+        )
+
+    with col_desc:
+        st.markdown(
+            f"""
+        <div class="character-card">
+            <p><b>📝 설명:</b><br>{char_info['desc']}</p>
+            <p><b>⚔️ 사용하는 포켓몬:</b><br>{char_info['pokemon']}</p>
+            <p><b>📍 출현/활동 위치:</b><br>{char_info['location']}</p>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
