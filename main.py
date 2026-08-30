@@ -40,6 +40,9 @@ if "selected_item" not in st.session_state:
 if "item_search_query" not in st.session_state:
   st.session_state.item_search_query = ""
 
+if "item_search_history" not in st.session_state:
+  st.session_state.item_search_history = []
+
 
 # 세대별 범위 정의 (포켓몬)
 GENERATIONS = {
@@ -1453,6 +1456,16 @@ def add_character_search_history(query):
     st.session_state.character_search_history.insert(0, query)
     if len(st.session_state.character_search_history) > 10:
       st.session_state.character_search_history.pop()
+
+
+def add_item_search_history(query):
+  query = query.strip()
+  if query:
+    if query in st.session_state.item_search_history:
+      st.session_state.item_search_history.remove(query)
+    st.session_state.item_search_history.insert(0, query)
+    if len(st.session_state.item_search_history) > 10:
+      st.session_state.item_search_history.pop()
 
 
 # 검색어 업데이트 콜백
@@ -3061,7 +3074,7 @@ st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
   go_to_page("Main")
 
-if st.sidebar.button("📖 세대별 도감", use_container_width=True):
+if st.sidebar.button("📖 포켓몬 도감", use_container_width=True):
   go_to_page("포켓몬 도감")
 
 if st.sidebar.button("👤 인물 도감", use_container_width=True):
@@ -3106,6 +3119,25 @@ if st.session_state.character_search_history:
         st.rerun()
 else:
   st.sidebar.write("최근 조회한 인물이 없습니다.")
+
+st.sidebar.markdown("### 🕒 최근 본 아이템")
+if st.session_state.item_search_history:
+  if st.sidebar.button("아이템 기록 전체 삭제", use_container_width=True):
+    st.session_state.item_search_history = []
+    st.rerun()
+
+  for h_item_name in st.session_state.item_search_history:
+    if st.sidebar.button(
+        f"🎒 {h_item_name}", key=f"side_item_hist_{h_item_name}", use_container_width=True
+    ):
+      cat_name, _, item = find_item_by_name(h_item_name)
+      if item:
+        st.session_state.current_page = "아이템 도감"
+        st.session_state.item_category = cat_name
+        st.session_state.selected_item = h_item_name
+        st.rerun()
+else:
+  st.sidebar.write("최근 조회한 아이템이 없습니다.")
 
 
 # ==================== 페이지 라우팅 ====================
@@ -4033,6 +4065,7 @@ elif st.session_state.current_page == "아이템 도감":
           )
           if st.button("상세 보기", key=f"item_detail_btn_{idx}", use_container_width=True):
             st.session_state.selected_item = it["name"]
+            add_item_search_history(it["name"])
             st.rerun()
 
   else:
