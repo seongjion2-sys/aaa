@@ -750,6 +750,39 @@ CHARACTER_GENERATIONS = {
     },
 }
 
+# 인물 도감 표시 순서 (주인공 → 라이벌 → 포켓몬 박사 → 체육관 관장 → 포켓몬리그 → 로켓단)
+CHARACTER_CATEGORY_ORDER = ["주인공", "라이벌", "포켓몬 박사", "체육관 관장", "포켓몬리그", "로켓단"]
+
+CHARACTER_CATEGORY_MAP = {
+    "레드": "주인공",
+    "그린": "라이벌",
+    "오박사": "포켓몬 박사",
+    "비주기": "로켓단",
+    "목호": "포켓몬리그",
+    "윤진": "포켓몬리그",
+    "시로나": "포켓몬리그",
+    "아이리스": "포켓몬리그",
+    "아델": "포켓몬리그",
+    "카르네": "포켓몬리그",
+    "단델": "포켓몬리그",
+}
+
+
+def get_character_category(char):
+  if char["name"] in CHARACTER_CATEGORY_MAP:
+    return CHARACTER_CATEGORY_MAP[char["name"]]
+  if "체육관" in char["title"] or "스타디움" in char["title"]:
+    return "체육관 관장"
+  return "기타"
+
+
+def character_sort_key(char):
+  category = get_character_category(char)
+  if category in CHARACTER_CATEGORY_ORDER:
+    return CHARACTER_CATEGORY_ORDER.index(category)
+  return len(CHARACTER_CATEGORY_ORDER)
+
+
 # 한글 추천 포켓몬을 위한 영문 매핑
 FEATURED_POKEMON_MAP = {
     "켄타로스": "tauros",
@@ -925,10 +958,10 @@ st.markdown(
         font-size: 1.2rem;
     }
     .char-card {
-        border: 2px solid #e0e0e0;
+        border: 2px solid #444444;
         border-radius: 10px;
         padding: 20px;
-        background-color: #f8f9fa;
+        background-color: transparent;
         margin-bottom: 15px;
     }
     .type-table {
@@ -2283,6 +2316,8 @@ elif st.session_state.current_page == "인물 도감":
           c for c in characters if query_text.lower() in c["name"].lower()
       ]
 
+    characters = sorted(characters, key=character_sort_key)
+
     if not characters:
       st.warning(f"'{query_text}'에 해당하는 인물을 찾을 수 없습니다.")
     else:
@@ -2290,10 +2325,12 @@ elif st.session_state.current_page == "인물 도감":
         pokemon_line = (
             ", ".join(char["pokemon"]) if char["pokemon"] else "정보 없음"
         )
+        category = get_character_category(char)
         st.markdown(
             f"""
             <div class="char-card">
-                <h3 style="margin-top: 0; color: #008275;">{char['name']} <small style="font-size: 0.9rem; color: #666;">({char['title']})</small></h3>
+                <p style="margin: 0 0 4px 0; font-size: 0.8rem; font-weight: bold; color: #008275;">{category}</p>
+                <h3 style="margin-top: 0; color: #008275;">{char['name']} <small style="font-size: 0.9rem; color: #aaaaaa;">({char['title']})</small></h3>
                 <p><b>타입:</b> {char['type']}</p>
                 <p><b>전문 분야:</b> {char['specialty']}</p>
                 <p><b>설명:</b> {char['desc']}</p>
