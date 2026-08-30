@@ -834,7 +834,26 @@ CHARACTER_GENERATIONS = {
 }
 
 # 인물 도감 표시 순서 (주인공 → 라이벌 → 포켓몬 박사 → 체육관 관장 → 포켓몬리그 → 로켓단)
-CHARACTER_CATEGORY_ORDER = ["주인공", "라이벌", "포켓몬 박사", "체육관 관장", "포켓몬리그", "로켓단"]
+CHARACTER_CATEGORY_ORDER = [
+    "주인공",
+    "라이벌",
+    "포켓몬 박사",
+    "체육관 관장",
+    "사천왕",
+    "포켓몬리그",
+    "로켓단",
+]
+
+CHARACTER_CATEGORY_ICONS = {
+    "주인공": "🧑",
+    "라이벌": "⚔️",
+    "포켓몬 박사": "🔬",
+    "체육관 관장": "🏟️",
+    "사천왕": "🎖️",
+    "포켓몬리그": "🏆",
+    "로켓단": "💀",
+    "기타": "👤",
+}
 
 CHARACTER_CATEGORY_MAP = {
     "레드": "주인공",
@@ -854,6 +873,10 @@ CHARACTER_CATEGORY_MAP = {
 def get_character_category(char):
   if char["name"] in CHARACTER_CATEGORY_MAP:
     return CHARACTER_CATEGORY_MAP[char["name"]]
+  if "사천왕" in char["title"] and (
+      "체육관" not in char["title"] and "스타디움" not in char["title"]
+  ):
+    return "사천왕"
   if "체육관" in char["title"] or "스타디움" in char["title"]:
     return "체육관 관장"
   return "기타"
@@ -2663,24 +2686,45 @@ elif st.session_state.current_page == "인물 도감":
       if not characters:
         st.warning(f"'{query_text}'에 해당하는 인물을 찾을 수 없습니다.")
       else:
-        for idx, char in enumerate(characters):
+        # 나무위키 목차처럼 카테고리(주인공/라이벌/체육관 관장 등)별로 묶어서 표시
+        grouped = {}
+        for char in characters:
           category = get_character_category(char)
+          grouped.setdefault(category, []).append(char)
+
+        ordered_categories = [
+            c for c in CHARACTER_CATEGORY_ORDER if c in grouped
+        ] + [c for c in grouped if c not in CHARACTER_CATEGORY_ORDER]
+
+        btn_idx = 0
+        for category in ordered_categories:
+          icon = CHARACTER_CATEGORY_ICONS.get(category, "👤")
           st.markdown(
               f"""
-              <div class="char-card">
-                  <p style="margin: 0 0 4px 0; font-size: 0.8rem; font-weight: bold; color: #008275;">{category}</p>
-                  <h3 style="margin-top: 0; margin-bottom: 0; color: #008275;">{char['name']} <small style="font-size: 0.9rem; color: #aaaaaa;">({char['title']})</small></h3>
-              </div>
+              <h3 style="color:{g_data['color']}; border-bottom: 2px solid {g_data['color']};
+                  padding-bottom: 6px; margin-top: 32px;">
+                  {icon} {category} <span style="font-size:0.8rem; color:#999;">({len(grouped[category])})</span>
+              </h3>
               """,
               unsafe_allow_html=True,
           )
-          if st.button(
-              f"{char['name']} 상세 보기",
-              key=f"char_detail_btn_{idx}",
-              use_container_width=True,
-          ):
-            st.session_state.selected_character = char["name"]
-            st.rerun()
+          for char in grouped[category]:
+            st.markdown(
+                f"""
+                <div class="char-card">
+                    <h3 style="margin-top: 0; margin-bottom: 0; color: #008275;">{char['name']} <small style="font-size: 0.9rem; color: #aaaaaa;">({char['title']})</small></h3>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                f"{char['name']} 상세 보기",
+                key=f"char_detail_btn_{btn_idx}",
+                use_container_width=True,
+            ):
+              st.session_state.selected_character = char["name"]
+              st.rerun()
+            btn_idx += 1
 
 elif st.session_state.current_page == "맵 도감":
   st.title("🗺️ 맵 도감")
