@@ -1394,6 +1394,14 @@ CHARACTER_EXTRA_INFO = {
 }
 
 
+def find_character_gen(char_name):
+  for gen_name, gen_data in CHARACTER_GENERATIONS.items():
+    for c in gen_data["characters"]:
+      if c["name"] == char_name:
+        return gen_name
+  return None
+
+
 def get_character_extra_info(char_name):
   return CHARACTER_EXTRA_INFO.get(
       char_name,
@@ -3080,6 +3088,25 @@ if st.session_state.search_history:
 else:
   st.sidebar.write("최근 검색한 기록이 없습니다.")
 
+st.sidebar.markdown("### 🕒 최근 본 인물")
+if st.session_state.character_search_history:
+  if st.sidebar.button("인물 기록 전체 삭제", use_container_width=True):
+    st.session_state.character_search_history = []
+    st.rerun()
+
+  for h_char in st.session_state.character_search_history:
+    if st.sidebar.button(
+        f"👤 {h_char}", key=f"side_char_hist_{h_char}", use_container_width=True
+    ):
+      char_gen = find_character_gen(h_char)
+      if char_gen:
+        st.session_state.current_page = "인물 도감"
+        st.session_state.selected_char_gen = char_gen
+        st.session_state.selected_character = h_char
+        st.rerun()
+else:
+  st.sidebar.write("최근 조회한 인물이 없습니다.")
+
 
 # ==================== 페이지 라우팅 ====================
 
@@ -3895,6 +3922,7 @@ elif st.session_state.current_page == "인물 도감":
                 use_container_width=True,
             ):
               st.session_state.selected_character = char["name"]
+              add_character_search_history(char["name"])
               st.rerun()
             btn_idx += 1
 
