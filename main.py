@@ -1712,6 +1712,19 @@ def get_generation_id_range(g_name):
   return (1, 1025)
 
 
+def get_character_avatar_url(char_name, bg_color):
+  """실제 인물 사진이 없을 때 이름 기반의 아바타 이미지를 생성합니다.
+  (ui-avatars.com: 이름 텍스트로 아바타를 그려주는 무료 공개 서비스라
+  저작권이 있는 게임 원화를 임의로 가져오지 않고도 실제 이미지를 표시할 수 있습니다.)"""
+  encoded_name = urllib.parse.quote(char_name)
+  bg = bg_color.lstrip("#")
+  return (
+      "https://ui-avatars.com/api/"
+      f"?name={encoded_name}&background={bg}&color=fff"
+      "&size=256&bold=true&font-size=0.4&length=2"
+  )
+
+
 @st.cache_data(ttl=86400)
 def resolve_character_pokemon(query_name, start_id, end_id):
   """세대 ID 범위 내에서 한글 이름과 일치하는 포켓몬을 찾아
@@ -2509,14 +2522,10 @@ elif st.session_state.current_page == "인물 도감":
               f"<div class='char-name-banner' style='background-color:{gen_color};'>{char['name']}</div>",
               unsafe_allow_html=True,
           )
-          char_image_url = char.get("image", "")
-          if char_image_url:
-            st.image(char_image_url, use_container_width=True)
-          else:
-            st.markdown(
-                f"<div class='char-portrait' style='background-color:{gen_color}33; border:2px solid {gen_color};'>👤</div>",
-                unsafe_allow_html=True,
-            )
+          char_image_url = char.get("image", "") or get_character_avatar_url(
+              char["name"], gen_color
+          )
+          st.image(char_image_url, use_container_width=True)
           st.markdown(
               f"""
               <table class="char-info-table">
