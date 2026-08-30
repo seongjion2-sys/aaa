@@ -1713,12 +1713,13 @@ def get_generation_id_range(g_name):
 
 
 @st.cache_data(ttl=86400)
-def get_pokemon_image_by_korean_name(query_name, start_id, end_id):
+def resolve_character_pokemon(query_name, start_id, end_id):
   """세대 ID 범위 내에서 한글 이름과 일치하는 포켓몬을 찾아
-  공식 아트워크 이미지 URL을 반환합니다. 못 찾으면 빈 문자열을 반환합니다."""
+  {"id": 전국도감 번호, "image": 공식 아트워크 URL} 을 반환합니다.
+  찾지 못하면 None을 반환합니다."""
   query_name = (query_name or "").strip()
   if not query_name:
-    return ""
+    return None
 
   # "다이나맥스 리자몽" 처럼 접두어가 붙은 이름은 원래 이름으로도 시도합니다.
   candidates = [query_name]
@@ -1738,14 +1739,15 @@ def get_pokemon_image_by_korean_name(query_name, start_id, end_id):
           )
           if p_res.status_code == 200:
             p_data = p_res.json()
-            return (
+            img_url = (
                 p_data["sprites"]["other"]["official-artwork"]["front_default"]
                 or p_data["sprites"]["front_default"]
                 or ""
             )
+            return {"id": p_id, "image": img_url}
         except Exception:
           pass
-  return ""
+  return None
 
 
 # 사이드바 네비게이션
@@ -2469,13 +2471,14 @@ elif st.session_state.current_page == "인물 도감":
           st.markdown("### 2. 사용 포켓몬")
           if char["pokemon"]:
             start_id, end_id = get_generation_id_range(g_name)
-            with st.spinner("사용 포켓몬 이미지를 불러오는 중..."):
+            with st.spinner("사용 포켓몬 정보를 불러오는 중..."):
               pkmn_cols = st.columns(len(char["pokemon"]))
               for p_col, p_name in zip(pkmn_cols, char["pokemon"]):
                 with p_col:
-                  img_url = get_pokemon_image_by_korean_name(
+                  resolved = resolve_character_pokemon(
                       p_name, start_id, end_id
                   )
+                  img_url = resolved["image"] if resolved else ""
                   if img_url:
                     st.image(img_url, caption=p_name, use_container_width=True)
                   else:
@@ -2488,6 +2491,16 @@ elif st.session_state.current_page == "인물 도감":
                         """,
                         unsafe_allow_html=True,
                     )
+                  if resolved:
+                    if st.button(
+                        "📖 도감에서 보기",
+                        key=f"char_pkmn_link_{char['name']}_{p_name}",
+                        use_container_width=True,
+                    ):
+                      st.session_state.current_page = "전국 도감"
+                      st.session_state.search_query = str(resolved["id"])
+                      add_search_history(p_name)
+                      st.rerun()
           else:
             st.write("정보 없음")
 
