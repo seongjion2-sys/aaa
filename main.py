@@ -31,6 +31,15 @@ if "selected_character" not in st.session_state:
 if "character_search_history" not in st.session_state:
   st.session_state.character_search_history = []
 
+if "item_category" not in st.session_state:
+  st.session_state.item_category = None
+
+if "selected_item" not in st.session_state:
+  st.session_state.selected_item = None
+
+if "item_search_query" not in st.session_state:
+  st.session_state.item_search_query = ""
+
 
 # 세대별 범위 정의 (포켓몬)
 GENERATIONS = {
@@ -1031,6 +1040,10 @@ def go_to_page(page_name):
   elif page_name == "인물 도감":
     st.session_state.selected_char_gen = None
     st.session_state.selected_character = None
+  elif page_name == "아이템 도감":
+    st.session_state.item_category = None
+    st.session_state.selected_item = None
+    st.session_state.item_search_query = ""
 
 
 # 검색어 기록 추가 함수
@@ -1069,6 +1082,10 @@ def update_national_search():
   st.session_state.current_page = "전국 도감"
   if query.strip():
     add_search_history(query)
+
+
+def update_item_search():
+  st.session_state.item_search_query = st.session_state.item_search_input
 
 
 def update_character_search():
@@ -1957,6 +1974,178 @@ def resolve_character_pokemon(query_name, start_id, end_id):
   return {"id": pokemon_id, "image": fetch_pokemon_artwork_url(pokemon_id)}
 
 
+# ==================== 아이템(도구) 도감 데이터 ====================
+# 나무위키 '포켓몬스터/도구/배틀' 문서의 분류 체계를 참고하여
+# 배틀에서 쓰이는 지니는 도구를 9가지 갈래로 정리했습니다.
+
+ITEM_CATEGORIES = {
+    "기술 강화 도구": {
+        "color": "#F08030",
+        "icon": "🔥",
+        "desc": "특정 타입이나 공격/특수 분류의 기술 위력을 높여주는 도구입니다.",
+        "items": [
+            {"name": "목탄", "en": "charcoal", "summary": "불꽃 타입 기술 위력 1.2배",
+             "detail": "불꽃 타입 기술의 위력을 1.2배로 올려주는 타입 강화 도구입니다. 불꽃 타입 에이스에게 자주 채용됩니다."},
+            {"name": "신비한물", "en": "mystic-water", "summary": "물 타입 기술 위력 1.2배",
+             "detail": "물 타입 기술의 위력을 1.2배로 올려주는 타입 강화 도구입니다."},
+            {"name": "기적의씨", "en": "miracle-seed", "summary": "풀 타입 기술 위력 1.2배",
+             "detail": "풀 타입 기술의 위력을 1.2배로 올려주는 타입 강화 도구입니다."},
+            {"name": "자석", "en": "magnet", "summary": "전기 타입 기술 위력 1.2배",
+             "detail": "전기 타입 기술의 위력을 1.2배로 올려주는 타입 강화 도구입니다."},
+            {"name": "검은벨트", "en": "black-belt", "summary": "격투 타입 기술 위력 1.2배",
+             "detail": "격투 타입 기술의 위력을 1.2배로 올려주는 타입 강화 도구입니다."},
+            {"name": "흑안경", "en": "black-glasses", "summary": "악 타입 기술 위력 1.2배",
+             "detail": "악 타입 기술의 위력을 1.2배로 올려주는 타입 강화 도구입니다."},
+            {"name": "용의송곳니", "en": "dragon-fang", "summary": "드래곤 타입 기술 위력 1.2배",
+             "detail": "드래곤 타입 기술의 위력을 1.2배로 올려주는 타입 강화 도구입니다."},
+            {"name": "확대경", "en": "expert-belt", "summary": "효과가 뛰어난 기술 위력 1.2배",
+             "detail": "상대에게 상성상 효과가 뛰어난(반감이 아닌) 기술을 사용했을 때 위력을 1.2배로 올려주는 범용 강화 도구입니다."},
+            {"name": "근육의띠", "en": "muscle-band", "summary": "물리 기술 위력 1.1배",
+             "detail": "분류가 물리인 기술의 위력을 1.1배로 소폭 올려주는 도구입니다."},
+            {"name": "신사의안경", "en": "wise-glasses", "summary": "특수 기술 위력 1.1배",
+             "detail": "분류가 특수인 기술의 위력을 1.1배로 소폭 올려주는 도구입니다."},
+        ],
+    },
+    "능력치 강화 도구": {
+        "color": "#6890F0",
+        "icon": "📈",
+        "desc": "지닌 포켓몬의 특정 능력치를 실수치 기준으로 큰 폭으로 올려주는 도구입니다.",
+        "items": [
+            {"name": "구애머리띠", "en": "choice-band", "summary": "공격 1.5배 / 기술 고정",
+             "detail": "공격 실수치를 1.5배로 올려주지만, 필드에 나온 뒤 처음 사용한 기술만 계속 쓸 수 있게 됩니다."},
+            {"name": "구애안경", "en": "choice-specs", "summary": "특수공격 1.5배 / 기술 고정",
+             "detail": "특수공격 실수치를 1.5배로 올려주지만, 필드에 나온 뒤 처음 사용한 기술만 계속 쓸 수 있게 됩니다."},
+            {"name": "구애스카프", "en": "choice-scarf", "summary": "스피드 1.5배 / 기술 고정",
+             "detail": "스피드 실수치를 1.5배로 올려주지만, 필드에 나온 뒤 처음 사용한 기술만 계속 쓸 수 있게 됩니다."},
+            {"name": "부스트에너지", "en": "booster-energy", "summary": "고유 특성 발동 시 능력치 상승",
+             "detail": "고대·미래 포켓몬 등 전용 특성을 가진 포켓몬이 지니면, 특성이 발동해 공격/특수공격 또는 스피드 중 낮은 능력치가 한 랭크 상승합니다."},
+            {"name": "충전지", "en": "cell-battery", "summary": "전기 기술 피격 시 공격 1랭크 상승",
+             "detail": "전기 타입 기술에 맞으면 그 데미지를 견디고 공격이 1랭크 상승하는 1회용 도구입니다."},
+        ],
+    },
+    "전용 도구": {
+        "color": "#F85888",
+        "icon": "🎯",
+        "desc": "특정 포켓몬만 효과를 보는 전용 장비로, 다른 포켓몬이 지니면 효과가 없습니다.",
+        "items": [
+            {"name": "전기구슬", "en": "light-ball", "summary": "피카츄 전용 · 공격/특공 2배",
+             "detail": "피카츄가 지니면 공격과 특수공격 실수치가 2배로 상승합니다. 피츄나 라이츄에게는 적용되지 않습니다."},
+            {"name": "두꺼운뼈", "en": "thick-club", "summary": "딱구리 계열 전용 · 공격 2배",
+             "detail": "딱구리, 딱쥐다리, 텅구리가 지니면 공격 실수치가 2배로 상승합니다."},
+            {"name": "딥시통", "en": "deep-sea-tooth", "summary": "골더프 전용 · 특수공격 2배",
+             "detail": "골더프가 지니면 특수공격 실수치가 2배로 상승합니다."},
+            {"name": "딥시비늘", "en": "deep-sea-scale", "summary": "골더프 전용 · 특수방어 2배",
+             "detail": "골더프가 지니면 특수방어 실수치가 2배로 상승합니다."},
+            {"name": "금속가루", "en": "metal-powder", "summary": "메타몽 전용 · 방어 2배",
+             "detail": "메타몽이 지니면 방어 실수치가 2배로 상승합니다."},
+            {"name": "쪽빛구슬", "en": "blue-orb", "summary": "가이오가 전용 · 원시회귀",
+             "detail": "가이오가가 지니고 배틀에 나가면 원시회귀하여 원시가이오가가 됩니다."},
+            {"name": "주홍구슬", "en": "red-orb", "summary": "그란돈 전용 · 원시회귀",
+             "detail": "그란돈이 지니고 배틀에 나가면 원시회귀하여 원시그란돈이 됩니다."},
+        ],
+    },
+    "체력 회복 도구": {
+        "color": "#78C850",
+        "icon": "💊",
+        "desc": "체력이 일정 수준 이하로 떨어지면 자동으로 발동하거나, 매 턴 조금씩 체력을 회복시켜 주는 도구입니다.",
+        "items": [
+            {"name": "오렌열매", "en": "oran-berry", "summary": "체력 절반 이하 시 10 회복",
+             "detail": "체력이 최대체력의 절반 이하로 떨어지면 자동으로 사용되어 체력을 10 회복시키는 나무열매입니다."},
+            {"name": "잎사귀열매", "en": "sitrus-berry", "summary": "체력 절반 이하 시 1/4 회복",
+             "detail": "체력이 최대체력의 절반 이하로 떨어지면 자동으로 사용되어 최대체력의 1/4을 회복시키는 나무열매입니다."},
+            {"name": "먹다남은과자", "en": "leftovers", "summary": "매 턴 1/16 회복",
+             "detail": "턴이 끝날 때마다 최대체력의 1/16만큼 서서히 체력을 회복시켜 주는 도구입니다. 오래 버티는 포켓몬에게 특히 유용합니다."},
+        ],
+    },
+    "내성 도구": {
+        "color": "#B8B8D0",
+        "icon": "🛡️",
+        "desc": "특정 상태이상이나 능력치 하락, 특정 타입 기술의 피해를 줄이거나 무효로 만들어 주는 도구입니다.",
+        "items": [
+            {"name": "하양허브", "en": "white-herb", "summary": "하락한 능력치 1회 원상복구",
+             "detail": "능력치가 하락한 상태라면 이를 한 번 원래대로 되돌려주고 사라지는 1회용 도구입니다."},
+            {"name": "멘탈허브", "en": "mental-herb", "summary": "정신 계열 상태 1회 해제",
+             "detail": "헤롱헤롱, 도발, 사슬묶기 등 정신에 영향을 주는 상태를 한 번 풀어주고 사라지는 1회용 도구입니다."},
+            {"name": "진정열매", "en": "persim-berry", "summary": "혼란 상태 회복",
+             "detail": "혼란 상태에 걸렸을 때 자동으로 사용되어 혼란을 풀어주는 나무열매입니다."},
+            {"name": "짓주열매", "en": "chople-berry", "summary": "격투 타입 피해 절반",
+             "detail": "격투 타입 기술에 맞았을 때 그 피해를 절반으로 줄여주는 타입 저감 나무열매 시리즈 중 하나입니다. 타입별로 이름이 다른 열매가 존재합니다."},
+        ],
+    },
+    "교체 도구": {
+        "color": "#A890F0",
+        "icon": "🔄",
+        "desc": "특정 조건이 되면 지닌 포켓몬이나 상대 포켓몬을 강제로 교체시키는 도구입니다.",
+        "items": [
+            {"name": "탈출버튼", "en": "eject-button", "summary": "피격 시 강제 교체",
+             "detail": "기술에 맞아 데미지를 입으면 지닌 포켓몬이 자동으로 필드에서 물러나고, 대기 중인 다른 포켓몬으로 교체됩니다."},
+            {"name": "탈출팩", "en": "eject-pack", "summary": "능력치 하락 시 강제 교체",
+             "detail": "능력치가 하락하면 자동으로 필드에서 물러나고 다른 포켓몬으로 교체되는 도구입니다."},
+            {"name": "빨간카드", "en": "red-card", "summary": "피격 시 상대를 강제 교체",
+             "detail": "기술에 맞아 데미지를 입으면 상대 포켓몬을 강제로 다른 포켓몬으로 교체시키는 도구입니다."},
+        ],
+    },
+    "지속시간 증가 도구": {
+        "color": "#98D8D8",
+        "icon": "⏳",
+        "desc": "날씨나 필드, 벽 등의 지속 턴 수를 늘려주는 도구입니다.",
+        "items": [
+            {"name": "축축한바위", "en": "damp-rock", "summary": "비 지속 턴 연장(8턴)",
+             "detail": "비가 내리는 상태의 지속 턴 수를 8턴으로 늘려주는 도구입니다."},
+            {"name": "뜨거운바위", "en": "heat-rock", "summary": "쾌청 지속 턴 연장(8턴)",
+             "detail": "쾌청 상태의 지속 턴 수를 8턴으로 늘려주는 도구입니다."},
+            {"name": "모래바위", "en": "smooth-rock", "summary": "모래바람 지속 턴 연장(8턴)",
+             "detail": "모래바람 상태의 지속 턴 수를 8턴으로 늘려주는 도구입니다."},
+            {"name": "얼음바위", "en": "icy-rock", "summary": "싸라기눈 지속 턴 연장(8턴)",
+             "detail": "싸라기눈(눈) 상태의 지속 턴 수를 8턴으로 늘려주는 도구입니다."},
+            {"name": "빛의점토", "en": "light-clay", "summary": "리플렉터·빛의장막 연장(8턴)",
+             "detail": "리플렉터와 빛의장막의 지속 턴 수를 8턴으로 늘려주는 도구입니다."},
+        ],
+    },
+    "자기 피해 도구": {
+        "color": "#C03028",
+        "icon": "💥",
+        "desc": "강력한 효과를 주는 대신 사용할 때마다 스스로도 피해를 입는 도구입니다.",
+        "items": [
+            {"name": "생명의구슬", "en": "life-orb", "summary": "기술 위력 1.3배 / 반동 1/10",
+             "detail": "모든 기술의 위력을 1.3배로 올려주지만, 기술을 사용할 때마다 자신의 최대체력 1/10만큼 반동 피해를 입는 고위험 고효율 도구입니다."},
+            {"name": "가시열매", "en": "sticky-barb", "summary": "매 턴 1/8 피해 / 접촉 시 전이",
+             "detail": "턴이 끝날 때마다 최대체력의 1/8만큼 피해를 입지만, 접촉 기술에 맞으면 상대 포켓몬에게 옮겨갈 수 있는 나무열매 계열 도구입니다."},
+        ],
+    },
+    "기타": {
+        "color": "#A8A878",
+        "icon": "❓",
+        "desc": "위 분류에 속하지 않는 특수한 효과를 가진 도구들입니다.",
+        "items": [
+            {"name": "쇠구슬", "en": "iron-ball", "summary": "스피드 절반 / 비행·부유 무효화",
+             "detail": "스피드를 절반으로 낮추지만, 비행 타입이나 부유 특성을 가진 포켓몬도 땅 타입 기술에 맞을 수 있게 만듭니다."},
+            {"name": "갈고리발톱", "en": "grip-claw", "summary": "조이기 기술 지속 턴 연장",
+             "detail": "휘감기, 모래지옥 등 상대를 옭아매는 조이기 계열 기술의 지속 턴을 늘려주는 도구입니다."},
+        ],
+    },
+}
+
+
+@st.cache_data(ttl=86400)
+def get_item_image_url(en_name):
+  """도구의 영문 슬러그로 PokeAPI 스프라이트 저장소의 아이콘 URL을 만듭니다."""
+  if not en_name:
+    return ""
+  return (
+      "https://raw.githubusercontent.com/PokeAPI/sprites/master/"
+      f"sprites/items/{en_name}.png"
+  )
+
+
+def find_item_by_name(item_name):
+  for cat_name, cat_data in ITEM_CATEGORIES.items():
+    for it in cat_data["items"]:
+      if it["name"] == item_name:
+        return cat_name, cat_data, it
+  return None, None, None
+
+
 # 사이드바 네비게이션
 st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
@@ -1967,6 +2156,9 @@ if st.sidebar.button("📖 세대별 도감", use_container_width=True):
 
 if st.sidebar.button("👤 인물 도감", use_container_width=True):
   go_to_page("인물 도감")
+
+if st.sidebar.button("🎒 아이템 도감", use_container_width=True):
+  go_to_page("아이템 도감")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🕒 최근 검색 기록")
@@ -2028,15 +2220,15 @@ if st.session_state.current_page == "Main":
     st.markdown(
         """
         <div class="menu-card">
-            <div style="font-size: 2.0rem; margin-bottom: 6px;">🗺️</div>
-            <div style="font-weight: bold; font-size: 1.1rem; color: #008275; margin-bottom: 4px;">맵 도감</div>
-            <div style="font-size: 0.8rem; color: #666;">지방별 필드 및 서식지 정보</div>
+            <div style="font-size: 2.0rem; margin-bottom: 6px;">🎒</div>
+            <div style="font-weight: bold; font-size: 1.1rem; color: #008275; margin-bottom: 4px;">아이템 도감</div>
+            <div style="font-size: 0.8rem; color: #666;">배틀 도구 종류별 효과 정보</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    if st.button("맵 도감", key="btn_map", use_container_width=True):
-      go_to_page("맵 도감")
+    if st.button("아이템 도감", key="btn_item", use_container_width=True):
+      go_to_page("아이템 도감")
       st.rerun()
 
   st.markdown(
@@ -2804,6 +2996,155 @@ elif st.session_state.current_page == "인물 도감":
               st.rerun()
             btn_idx += 1
 
-elif st.session_state.current_page == "맵 도감":
-  st.title("🗺️ 맵 도감")
-  st.info("준비 중인 페이지입니다.")
+elif st.session_state.current_page == "아이템 도감":
+
+  if st.session_state.selected_item:
+    # ---------- 아이템 상세 페이지 ----------
+    if st.button("◀ 아이템 목록으로", use_container_width=False):
+      st.session_state.selected_item = None
+      st.rerun()
+
+    cat_name, cat_data, item = find_item_by_name(st.session_state.selected_item)
+
+    if item is None:
+      st.warning("아이템 정보를 찾을 수 없습니다.")
+    else:
+      st.markdown(
+          f"# {item['name']} <span style='font-size:1rem; color:#aaaaaa;'>({cat_name})</span>",
+          unsafe_allow_html=True,
+      )
+      st.markdown(
+          f"<span class='type-chip' style='background-color:{cat_data['color']};'>"
+          f"{cat_data['icon']} {cat_name}</span>",
+          unsafe_allow_html=True,
+      )
+
+      col_left, col_right = st.columns([1, 2])
+      with col_left:
+        img_url = get_item_image_url(item["en"])
+        st.markdown(
+            f"""
+            <div class="infobox">
+                <img src="{img_url}" style="width:96px; height:96px; object-fit:contain; image-rendering:pixelated;">
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+      with col_right:
+        st.markdown("### 개요")
+        st.info(item["summary"])
+        st.markdown("### 상세 설명")
+        st.write(item["detail"])
+
+  elif st.session_state.item_category:
+    # ---------- 카테고리별 아이템 목록 ----------
+    cat_name = st.session_state.item_category
+
+    if st.button("◀ 분류 목록으로", use_container_width=False):
+      st.session_state.item_category = None
+      st.session_state.item_search_query = ""
+      st.rerun()
+
+    if cat_name == "전체 도구칸":
+      all_items = []
+      for c_name, c_data in ITEM_CATEGORIES.items():
+        for it in c_data["items"]:
+          all_items.append((c_name, c_data, it))
+      st.title("🎒 전체 도구칸")
+      st.write(f"**등록된 배틀 도구 전체 {len(all_items)}종을 한눈에 확인하세요.**")
+      cat_color = "#008275"
+    else:
+      cat_data = ITEM_CATEGORIES[cat_name]
+      all_items = [(cat_name, cat_data, it) for it in cat_data["items"]]
+      st.title(f"{cat_data['icon']} {cat_name}")
+      st.write(f"**{cat_data['desc']}**")
+      cat_color = cat_data["color"]
+
+    st.text_input(
+        "아이템 검색",
+        value=st.session_state.item_search_query,
+        key="item_search_input",
+        on_change=update_item_search,
+        placeholder="아이템 이름을 입력하세요...",
+    )
+
+    query_text = str(st.session_state.item_search_query).strip()
+    if query_text:
+      all_items = [
+          t for t in all_items if query_text.lower() in t[2]["name"].lower()
+      ]
+
+    if not all_items:
+      st.warning(f"'{query_text}'에 해당하는 아이템을 찾을 수 없습니다.")
+    else:
+      n_cols = 4
+      cols = st.columns(n_cols)
+      for idx, (c_name, c_data, it) in enumerate(all_items):
+        with cols[idx % n_cols]:
+          img_url = get_item_image_url(it["en"])
+          st.markdown(
+              f"""
+              <div class="char-card" style="text-align:center;">
+                  <img src="{img_url}" style="width:64px; height:64px; object-fit:contain; image-rendering:pixelated;"><br>
+                  <b>{it['name']}</b><br>
+                  <span class='type-chip' style='background-color:{c_data["color"]}; font-size:0.7rem;'>{c_name}</span>
+                  <p style="font-size:0.8rem; color:#999; margin-top:6px;">{it['summary']}</p>
+              </div>
+              """,
+              unsafe_allow_html=True,
+          )
+          if st.button("상세 보기", key=f"item_detail_btn_{idx}", use_container_width=True):
+            st.session_state.selected_item = it["name"]
+            st.rerun()
+
+  else:
+    # ---------- 아이템 분류 선택 화면 ----------
+    st.title("🎒 아이템 도감")
+    st.write("**배틀에서 사용하는 지니는 도구를 종류별로 확인하세요.**")
+    st.markdown(
+        "<h3 class='section-title'>📦 도구 분류 선택</h3>",
+        unsafe_allow_html=True,
+    )
+
+    category_names = list(ITEM_CATEGORIES.keys())
+    total_count = sum(len(c["items"]) for c in ITEM_CATEGORIES.values())
+
+    tiles = [
+        {
+            "name": "전체 도구칸",
+            "color": "#008275",
+            "icon": "🎒",
+            "sub": f"전체 도구 {total_count}종 모아보기",
+        }
+    ] + [
+        {
+            "name": n,
+            "color": ITEM_CATEGORIES[n]["color"],
+            "icon": ITEM_CATEGORIES[n]["icon"],
+            "sub": f"{len(ITEM_CATEGORIES[n]['items'])}종",
+        }
+        for n in category_names
+    ]
+
+    n_cols = 3
+    for row_start in range(0, len(tiles), n_cols):
+      row_tiles = tiles[row_start:row_start + n_cols]
+      cols = st.columns(n_cols)
+      for c_idx, tile in enumerate(row_tiles):
+        with cols[c_idx]:
+          st.markdown(
+              f"""
+              <div class="char-banner" style="background-color: {tile['color']};">
+                  {tile['icon']} {tile['name']}<br>
+                  <span style="font-size: 0.85rem; font-weight: normal;">{tile['sub']}</span>
+              </div>
+              """,
+              unsafe_allow_html=True,
+          )
+          if st.button(
+              f"{tile['name']} 보기",
+              key=f"item_cat_btn_{row_start}_{c_idx}",
+              use_container_width=True,
+          ):
+            st.session_state.item_category = tile["name"]
+            st.rerun()
