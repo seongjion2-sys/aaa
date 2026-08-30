@@ -2068,8 +2068,6 @@ ITEM_CATEGORIES = {
              "detail": "헤롱헤롱, 도발, 사슬묶기 등 정신에 영향을 주는 상태를 한 번 풀어주고 사라지는 1회용 도구입니다."},
             {"name": "진정열매", "en": "persim-berry", "summary": "혼란 상태 회복",
              "detail": "혼란 상태에 걸렸을 때 자동으로 사용되어 혼란을 풀어주는 나무열매입니다."},
-            {"name": "짓주열매", "en": "chople-berry", "summary": "격투 타입 피해 절반",
-             "detail": "격투 타입 기술에 맞았을 때 그 피해를 절반으로 줄여주는 타입 저감 나무열매 시리즈 중 하나입니다. 타입별로 이름이 다른 열매가 존재합니다."},
         ],
     },
     "교체 도구": {
@@ -2125,6 +2123,152 @@ ITEM_CATEGORIES = {
         ],
     },
 }
+
+
+# ---- 타입 계열 배틀 도구 일괄 추가 (나무위키 하위 문서 '기술 강화/전용 도구' 등 기준) ----
+_TYPE_ENHANCE_ITEMS = {
+    "normal": ("실크스카프", "silk-scarf"), "ice": ("안녹는얼음", "never-melt-ice"),
+    "poison": ("독바늘", "poison-barb"), "ground": ("부드러운모래", "soft-sand"),
+    "flying": ("예리한부리", "sharp-beak"), "psychic": ("이상한스푼", "twisted-spoon"),
+    "bug": ("은가루", "silver-powder"), "rock": ("딱딱한돌", "hard-stone"),
+    "ghost": ("저주의부적", "spell-tag"), "steel": ("금속코트", "metal-coat"),
+}
+_TYPE_GEMS = {t: (n + "주얼", f"{t}-gem") for t, n in TYPE_NAME_MAP.items()}
+_TYPE_Z_CRYSTALS = {
+    "normal": ("노말리움Z", "normalium-z"), "fire": ("파이어리움Z", "firium-z"),
+    "water": ("워터리움Z", "waterium-z"), "electric": ("일렉트리움Z", "electrium-z"),
+    "grass": ("그래스리움Z", "grassium-z"), "ice": ("아이시움Z", "icium-z"),
+    "fighting": ("파이팅리움Z", "fightinium-z"), "poison": ("포이즌리움Z", "poisonium-z"),
+    "ground": ("그라운드리움Z", "groundium-z"), "flying": ("플라잉리움Z", "flyinium-z"),
+    "psychic": ("사이킥리움Z", "psychium-z"), "bug": ("버그리움Z", "buginium-z"),
+    "rock": ("록키움Z", "rockium-z"), "ghost": ("고스트리움Z", "ghostium-z"),
+    "dragon": ("드래곤리움Z", "dragonium-z"), "dark": ("다크리움Z", "darkinium-z"),
+    "steel": ("스틸리움Z", "steelium-z"), "fairy": ("페어리움Z", "fairium-z"),
+}
+_TYPE_PLATES = {
+    "fighting": ("격투의판", "fist-plate"), "flying": ("비행의판", "sky-plate"),
+    "poison": ("맹독의판", "toxic-plate"), "ground": ("대지의판", "earth-plate"),
+    "rock": ("암석의판", "stone-plate"), "bug": ("벌레의판", "insect-plate"),
+    "ghost": ("유령의판", "spooky-plate"), "steel": ("강철의판", "iron-plate"),
+    "fire": ("화염의판", "flame-plate"), "water": ("물보라의판", "splash-plate"),
+    "grass": ("목초의판", "meadow-plate"), "electric": ("전격의판", "zap-plate"),
+    "psychic": ("정신의판", "mind-plate"), "ice": ("고드름의판", "icicle-plate"),
+    "dragon": ("용의판", "draco-plate"), "dark": ("공포의판", "dread-plate"),
+    "fairy": ("요정의판", "pixie-plate"), "normal": ("대리석판", "blank-plate"),
+}
+_TYPE_MEMORIES = {
+    t: (n + "의 메모리", f"{t}-memory")
+    for t, n in TYPE_NAME_MAP.items() if t != "normal"
+}
+_TYPE_RESIST_BERRIES = {
+    "fire": ("오카열매", "occa-berry"), "water": ("꼬시개열매", "passho-berry"),
+    "electric": ("초나열매", "wacan-berry"), "grass": ("린드열매", "rindo-berry"),
+    "ice": ("플카열매", "yache-berry"), "fighting": ("로플열매", "chople-berry"),
+    "poison": ("으름열매", "kebia-berry"), "ground": ("슈캐열매", "shuca-berry"),
+    "flying": ("바코열매", "coba-berry"), "psychic": ("야파열매", "payapa-berry"),
+    "bug": ("리체열매", "tanga-berry"), "rock": ("루미열매", "charti-berry"),
+    "ghost": ("수불열매", "kasib-berry"), "dragon": ("하반열매", "haban-berry"),
+    "dark": ("마코열매", "colbur-berry"), "steel": ("바리비열매", "babiri-berry"),
+    "normal": ("카리열매", "chilan-berry"), "fairy": ("로셀열매", "roseli-berry"),
+}
+
+for _t, (_ko, _en) in _TYPE_ENHANCE_ITEMS.items():
+  ITEM_CATEGORIES["기술 강화 도구"]["items"].append({
+      "name": _ko, "en": _en,
+      "summary": f"{TYPE_NAME_MAP[_t]} 타입 기술 위력 1.2배",
+      "detail": f"{TYPE_NAME_MAP[_t]} 타입 기술의 위력을 1.2배로 올려주는 타입 강화 도구입니다.",
+  })
+for _t, (_ko, _en) in _TYPE_GEMS.items():
+  ITEM_CATEGORIES["기술 강화 도구"]["items"].append({
+      "name": _ko, "en": _en,
+      "summary": f"{TYPE_NAME_MAP[_t]} 타입 기술 위력 1.3배(1회용)",
+      "detail": f"{TYPE_NAME_MAP[_t]} 타입 기술을 사용할 때 소모되어 그 기술의 위력을 1.3배로 올려주는 1회용 강화 도구입니다.",
+  })
+for _t, (_ko, _en) in _TYPE_Z_CRYSTALS.items():
+  ITEM_CATEGORIES["기술 강화 도구"]["items"].append({
+      "name": _ko, "en": _en,
+      "summary": f"{TYPE_NAME_MAP[_t]} 타입 Z기술 발동",
+      "detail": f"{TYPE_NAME_MAP[_t]} 타입 기술을 지니고 있으면, 배틀 중 한 번 그 기술을 강력한 Z기술로 바꿔 사용할 수 있게 해주는 도구입니다.",
+  })
+for _t, (_ko, _en) in _TYPE_PLATES.items():
+  ITEM_CATEGORIES["전용 도구"]["items"].append({
+      "name": _ko, "en": _en,
+      "summary": f"아르세우스 전용 · {TYPE_NAME_MAP[_t]} 타입화",
+      "detail": f"아르세우스가 지니면 타입이 {TYPE_NAME_MAP[_t]} 타입으로 바뀌고, 전용기 저지먼트도 이 타입이 되며 위력이 1.2배 상승합니다.",
+  })
+for _t, (_ko, _en) in _TYPE_MEMORIES.items():
+  ITEM_CATEGORIES["전용 도구"]["items"].append({
+      "name": _ko, "en": _en,
+      "summary": f"실버디 전용 · {TYPE_NAME_MAP[_t]} 타입화",
+      "detail": f"실버디가 지니면 타입이 {TYPE_NAME_MAP[_t]} 타입으로 바뀌고, 전용기 멀티어택도 이 타입이 됩니다.",
+  })
+for _t, (_ko, _en) in _TYPE_RESIST_BERRIES.items():
+  _label = "노말" if _t == "normal" else TYPE_NAME_MAP[_t]
+  ITEM_CATEGORIES["내성 도구"]["items"].append({
+      "name": _ko, "en": _en,
+      "summary": f"{_label} 타입 피해 절반",
+      "detail": f"{_label} 타입 기술에 맞았을 때(노말 타입은 항상, 그 외 타입은 효과가 굉장할 때) 그 피해를 절반으로 줄여주는 타입 반감 나무열매입니다.",
+  })
+
+# ---- 랭크업/회복/상태이상 나무열매 일괄 추가 ----
+_STAT_UP_BERRIES = [
+    ("치리열매", "liechi-berry", "체력 1/4 이하 시 공격 1랭크 상승"),
+    ("용아열매", "ganlon-berry", "체력 1/4 이하 시 방어 1랭크 상승"),
+    ("캄라열매", "salac-berry", "체력 1/4 이하 시 스피드 1랭크 상승"),
+    ("야타비열매", "petaya-berry", "체력 1/4 이하 시 특수공격 1랭크 상승"),
+    ("규살열매", "apicot-berry", "체력 1/4 이하 시 특수방어 1랭크 상승"),
+    ("랑사열매", "lansat-berry", "체력 1/4 이하 시 급소율 2랭크 상승"),
+    ("스타열매", "starf-berry", "체력 1/4 이하 시 랜덤 능력치 1개 2랭크 상승"),
+    ("악키열매", "kee-berry", "물리 기술에 맞으면 방어 1랭크 상승"),
+    ("타라프열매", "maranga-berry", "특수 기술에 맞으면 특수방어 1랭크 상승"),
+]
+for _name, _en, _summary in _STAT_UP_BERRIES:
+  ITEM_CATEGORIES["능력치 강화 도구"]["items"].append({
+      "name": _name, "en": _en, "summary": _summary,
+      "detail": f"{_summary} 자동 발동형 나무열매입니다.",
+  })
+
+_FLAVOR_HALF_BERRIES = [
+    ("무화열매", "figy-berry", "매운맛"), ("위키열매", "wiki-berry", "떫은맛"),
+    ("마고열매", "mago-berry", "단맛"), ("아바열매", "aguav-berry", "쓴맛"),
+    ("파야열매", "iapapa-berry", "신맛"),
+]
+for _name, _en, _flavor in _FLAVOR_HALF_BERRIES:
+  ITEM_CATEGORIES["체력 회복 도구"]["items"].append({
+      "name": _name, "en": _en, "summary": "체력 1/4 이하 시 최대체력 1/3 회복",
+      "detail": f"체력이 최대체력의 1/4 이하로 떨어지면 자동으로 사용되어 최대체력의 1/3을 회복시켜 주지만, {_flavor}을 싫어하는 포켓몬이 먹으면 혼란에 걸릴 수 있는 나무열매입니다.",
+  })
+
+_STATUS_CURE_BERRIES = [
+    ("버치열매", "cheri-berry", "마비 치료"), ("유루열매", "chesto-berry", "잠듦 치료"),
+    ("복슝열매", "pecha-berry", "독 치료"), ("복분열매", "rawst-berry", "화상 치료"),
+    ("배리열매", "aspear-berry", "얼음 상태 치료"),
+    ("리샘열매", "lum-berry", "거의 모든 상태이상 치료"),
+]
+for _name, _en, _summary in _STATUS_CURE_BERRIES:
+  ITEM_CATEGORIES["내성 도구"]["items"].append({
+      "name": _name, "en": _en, "summary": _summary,
+      "detail": f"상태이상에 걸렸을 때 자동으로 사용되어 {_summary.replace(' 치료','을 치료').replace('상태 치료','상태를 치료')}해주는 나무열매입니다.",
+  })
+
+for _name, _en, _summary in [
+    ("자보열매", "jaboca-berry", "물리공격 피격 시 상대에게 1/8 피해"),
+    ("애터열매", "rowap-berry", "특수공격 피격 시 상대에게 1/8 피해"),
+]:
+  ITEM_CATEGORIES["자기 피해 도구"]["items"].append({
+      "name": _name, "en": _en, "summary": _summary,
+      "detail": f"{_summary}를 입히지만, 자신도 함께 소모되는 반격형 나무열매입니다.",
+  })
+
+for _name, _en, _summary, _detail in [
+    ("미클열매", "micle-berry", "체력 1/4 이하 시 명중률 20% 상승",
+     "체력이 최대체력의 1/4 이하로 떨어지면 다음에 사용할 기술의 명중률이 20% 오르는 나무열매입니다."),
+    ("애슈열매", "custap-berry", "체력 1/4 이하 시 다음 턴 선공",
+     "체력이 최대체력의 1/4 이하로 떨어지면 다음 턴에 우선적으로 행동할 수 있게 해주는 나무열매입니다."),
+]:
+  ITEM_CATEGORIES["기타"]["items"].append({
+      "name": _name, "en": _en, "summary": _summary, "detail": _detail,
+  })
 
 
 @st.cache_data(ttl=86400)
