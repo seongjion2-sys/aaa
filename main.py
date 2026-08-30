@@ -1443,13 +1443,18 @@ def render_type_table(grouped_data, is_defense=True):
 @st.cache_data(ttl=604800)
 @st.cache_data(ttl=604800)
 def get_namu_dex_description(pokemon_id, korean_name):
-  """나무위키의 포켓몬 문서에서 공식 게임 도감 설명을 가져옵니다.
+  """나무위키 포켓몬 문서의 '도감 설명' 표에서 게임 버전별 설명을 가져옵니다.
 
-  #899~#905(히스이)는 레전즈 아르세우스(PLA)의 도감 설명을,
-  #906~#1025(팔데아)는 9세대 스칼렛 도감 설명을 우선 사용합니다.
+  나무위키 문서는 단순 텍스트 순서가 아니라 표 구조로 되어 있으므로,
+  HTML의 table/tr/td 구조를 우선 파싱합니다.
 
-  번역기를 사용하지 않습니다. 나무위키에 적힌 한국어 문구를
-  그대로 읽어 오는 방식입니다.
+  반환값:
+    {
+      "scarlet": "...",
+      "violet": "...",
+      "pla": "...",
+      "default": "..."
+    }
   """
   if not korean_name or not (899 <= int(pokemon_id) <= 1025):
     return None
@@ -1462,7 +1467,7 @@ def get_namu_dex_description(pokemon_id, korean_name):
         f"{korean_name} (포켓몬)",
     ]
 
-    html = None
+    soup = None
 
     for page_name in page_names:
       url = "https://namu.moe/w/" + urllib.parse.quote(page_name, safe="")
@@ -1478,107 +1483,169 @@ def get_namu_dex_description(pokemon_id, korean_name):
       )
 
       if res.status_code == 200 and len(res.text) > 500:
-        html = res.text
+        soup = BeautifulSoup(res.text, "html.parser")
         break
 
-    if not html:
+    if soup is None:
       return None
 
-    soup = BeautifulSoup(html, "html.parser")
-
-    # 스크립트/스타일 등 실제 문서 내용과 무관한 요소 제거
     for tag in soup(["script", "style", "noscript", "svg"]):
       tag.decompose()
 
-    raw_text = soup.get_text("\n", strip=True)
-
-    # HTML에서 나온 텍스트를 줄 단위로 정리
-    lines = []
-    for line in raw_text.splitlines():
-      line = " ".join(line.split()).strip()
-      if line:
-        lines.append(line)
-
-    if not lines:
-      return None
-
-    # "도감 설명" 문단 이후의 내용만 대상으로 합니다.
-    try:
-      dex_index = next(
-          i for i, line in enumerate(lines)
-          if line == "도감 설명" or line.startswith("도감 설명")
+    def clean(value):
+      if value is None:
+        return ""
+      return (
+          " ".join(str(value).replace("\n", " ").replace("\f", " ").split())
+          .strip()
       )
-    except StopIteration:
-      return None
 
-    section = lines[dex_index + 1:]
+    def is_korean(value):
+      return any("\uac00" <= ch <= "\ud7a3" for ch in value)
 
-    # 너무 뒤의 진화/기술/출현장소 등은 도감 설명과 무관하므로 잘라냅니다.
-    stop_words = {
-        "진화 단계",
-        "배우는 기술",
-        "기술머신",
-        "출현장소",
-        "지니고 있는 도구",
-        "게임별 도트 그림",
-        "포켓몬 카드 게임",
-        "애니메이션에서의 등장",
-        "만화책에서의 등장",
+    # ------------------------------------------------------------
+    # 1. "도감 설명"이라는 제목이 포함된 영역을 찾습니다.
+    # ------------------------------------------------------------
+    dex_heading = None
+
+    for heading in soup.find_all(["h2", "h3", "h4", "h5", "div"]):
+      value = clean(heading.get_text(" ", strip=True))
+      if value == "도감 설명" or value.startswith("도감 설명"):
+        dex_heading = heading
+        break
+
+    # ------------------------------------------------------------
+    # 2. 가장 중요한 부분:
+    #    도감 설명 표의 행/셀을 직접 읽습니다.
+    #
+    #    나무위키 HTML 구조가 바뀌어도 "스칼렛", "바이올렛",
+    #    "PLA"가 들어간 셀을 기준으로 찾도록 합니다.
+    # ------------------------------------------------------------
+    result = {
+        "scarlet": None,
+        "violet": None,
+        "pla": None,
+        "default": None,
     }
 
-    cut = len(section)
-    for i, line in enumerate(section):
-      if line in stop_words:
-        cut = i
+    # 도감 설명 제목 이후의 테이블을 우선 검색합니다.
+    tables = soup.find_all("table")
+
+    for table in tables:
+      # 도감 설명 제목보다 앞쪽에 있는 표는 우선순위를 낮춥니다.
+      if dex_heading is not None:
+        try:
+          if not (
+              table == dex_heading
+              or dex_heading.find_next("table") is table
+              or dex_heading in table.parents
+          ):
+            # 아래 텍스트 검색으로 도감 표 여부를 확인하므로 continue하지 않습니다.
+            pass
+        except Exception:
+          pass
+
+      rows = table.find_all("tr")
+      table_rows = []
+
+      for row in rows:
+        cells = row.find_all(["th", "td"])
+        values = [clean(cell.get_text(" ", strip=True)) for cell in cells]
+        values = [v for v in values if v]
+        if values:
+          table_rows.append(values)
+
+      if not table_rows:
+        continue
+
+      table_text = " ".join(" ".join(row) for row in table_rows)
+
+      # 포켓몬 도감 설명 표인지 판단
+      has_version = any(
+          key in table_text
+          for key in ["스칼렛", "바이올렛", "PLA", "레전즈 아르세우스"]
+      )
+
+      if not has_version:
+        continue
+
+      # 표 안의 각 행을 분석
+      for row in table_rows:
+        for idx, value in enumerate(row):
+          # PLA
+          if value in {"PLA", "레전즈 아르세우스", "LEGENDS 아르세우스"}:
+            candidates = row[idx + 1:]
+            for candidate in candidates:
+              candidate = clean(candidate)
+              if is_korean(candidate) and len(candidate) >= 8:
+                result["pla"] = candidate
+                break
+
+          # 스칼렛
+          elif value == "스칼렛":
+            candidates = row[idx + 1:]
+            for candidate in candidates:
+              candidate = clean(candidate)
+              if is_korean(candidate) and len(candidate) >= 8:
+                result["scarlet"] = candidate
+                break
+
+          # 바이올렛
+          elif value == "바이올렛":
+            candidates = row[idx + 1:]
+            for candidate in candidates:
+              candidate = clean(candidate)
+              if is_korean(candidate) and len(candidate) >= 8:
+                result["violet"] = candidate
+                break
+
+      # 9세대 표에서 두 설명을 모두 찾았으면 충분합니다.
+      if result["scarlet"] and result["violet"]:
         break
 
-    section = section[:cut]
+    # ------------------------------------------------------------
+    # 3. HTML 표가 div 기반으로 렌더링되는 경우를 위한 fallback.
+    #    이 경우에도 "스칼렛/바이올렛" 바로 다음 한국어 문장을
+    #    가져오되, 진화/능력치 등의 다른 섹션은 제외합니다.
+    # ------------------------------------------------------------
+    if not (result["scarlet"] or result["violet"] or result["pla"]):
+      raw_lines = []
+      for line in soup.get_text("\n", strip=True).splitlines():
+        line = clean(line)
+        if line:
+          raw_lines.append(line)
 
-    def next_nonempty(seq, index):
-      for k in range(index + 1, len(seq)):
-        value = seq[k].strip()
-        if value:
-          return value
-      return None
+      for i, line in enumerate(raw_lines):
+        if line == "스칼렛":
+          for candidate in raw_lines[i + 1:i + 5]:
+            if is_korean(candidate) and len(candidate) >= 8:
+              result["scarlet"] = candidate
+              break
 
-    # 8세대 히스이 도감(#899~#905):
-    # "PLA" 바로 다음에 나오는 한국어 문장을 사용합니다.
+        elif line == "바이올렛":
+          for candidate in raw_lines[i + 1:i + 5]:
+            if is_korean(candidate) and len(candidate) >= 8:
+              result["violet"] = candidate
+              break
+
+        elif line in {"PLA", "레전즈 아르세우스", "LEGENDS 아르세우스"}:
+          for candidate in raw_lines[i + 1:i + 5]:
+            if is_korean(candidate) and len(candidate) >= 8:
+              result["pla"] = candidate
+              break
+
+    # ------------------------------------------------------------
+    # 4. 기본 표시 설명:
+    #    899~905 = PLA
+    #    906~1025 = 스칼렛
+    # ------------------------------------------------------------
     if 899 <= int(pokemon_id) <= 905:
-      for i, line in enumerate(section):
-        if line in {"PLA", "레전즈 아르세우스"}:
-          value = next_nonempty(section, i)
-          if value:
-            return value
+      result["default"] = result["pla"] or result["scarlet"] or result["violet"]
+    else:
+      result["default"] = result["scarlet"] or result["violet"]
 
-    # 9세대 팔데아 도감(#906~#1025):
-    # "9세대 → 스칼렛" 다음에 나오는 한국어 설명을 사용합니다.
-    gen9_index = None
-    for i, line in enumerate(section):
-      if line == "9세대":
-        gen9_index = i
-        break
-
-    if gen9_index is not None:
-      for i in range(gen9_index + 1, len(section)):
-        if section[i] == "스칼렛":
-          value = next_nonempty(section, i)
-          if value and value not in {"바이올렛", "레전즈 Z-A"}:
-            return value
-
-      # 혹시 표의 텍스트 순서가 달라진 경우 바이올렛도 fallback
-      for i in range(gen9_index + 1, len(section)):
-        if section[i] == "바이올렛":
-          value = next_nonempty(section, i)
-          if value and value not in {"스칼렛", "레전즈 Z-A"}:
-            return value
-
-    # 일부 나무위키 문서가 세대 표를 다른 방식으로 표시하는 경우를 위한
-    # 마지막 fallback: "PLA" 또는 "스칼렛/바이올렛" 뒤의 한국어 문장 탐색
-    for i, line in enumerate(section):
-      if line in {"PLA", "스칼렛", "바이올렛"}:
-        value = next_nonempty(section, i)
-        if value and any("\uac00" <= ch <= "\ud7a3" for ch in value):
-          return value
+    if result["default"]:
+      return result
 
   except Exception:
     pass
@@ -1588,32 +1655,36 @@ def get_namu_dex_description(pokemon_id, korean_name):
 
 @st.cache_data(ttl=604800)
 def extract_single_flavor_text(species_data, pokemon_id=None, korean_name=None):
-  """도감 설명을 가져옵니다.
+  """한국어 공식 게임 도감 설명을 표시합니다.
 
-  #899~#1025는 나무위키의 한국어 공식 게임 도감 설명을 최우선으로
-  사용합니다. 따라서 영어 → 한국어 기계번역을 하지 않습니다.
+  #899~#905:
+    LEGENDS 아르세우스(PLA) 설명을 기본값으로 사용
+
+  #906~#1025:
+    스칼렛 설명을 기본값으로 사용
+
+  나무위키에서 버전별 설명을 찾지 못하면 PokeAPI의 한국어 설명을
+  사용합니다. 영어를 기계번역하지 않습니다.
   """
-  # 최신 포켓몬은 나무위키 원문을 최우선으로 사용
   if pokemon_id is not None and korean_name and 899 <= int(pokemon_id) <= 1025:
-    namu_text = get_namu_dex_description(pokemon_id, korean_name)
-    if namu_text:
-      return namu_text
+    namu = get_namu_dex_description(pokemon_id, korean_name)
 
-  # 기존 포켓몬은 PokeAPI의 한국어 공식 데이터를 사용
+    if namu and namu.get("default"):
+      return namu["default"]
+
+  # 기존 포켓몬은 PokeAPI 한국어 원문을 사용
   flavor_entries = species_data.get("flavor_text_entries", [])
 
   for entry in flavor_entries:
     if entry.get("language", {}).get("name") == "ko":
-      text = entry.get("flavor_text", "")
-      if text:
+      value = entry.get("flavor_text", "")
+      if value:
         return (
-            text.replace("\\n", " ")
+            value.replace("\\n", " ")
             .replace("\\f", " ")
             .strip()
         )
 
-  # 번역기로 영어를 번역하지 않습니다.
-  # 한국어 데이터가 없는 경우 영어 원문 대신 안내 문구를 표시합니다.
   return "한국어 도감 설명이 등록되어 있지 않습니다."
 
 
