@@ -1704,6 +1704,50 @@ def get_featured_pokemon_image(query_name):
   return ""
 
 
+def get_generation_id_range(g_name):
+  """인물이 속한 세대의 전국도감 ID 범위를 반환합니다.
+  (히스이 지방처럼 GENERATIONS에 없는 세대는 전체 범위에서 탐색합니다.)"""
+  if g_name in GENERATIONS:
+    return GENERATIONS[g_name]["range"]
+  return (1, 1025)
+
+
+@st.cache_data(ttl=86400)
+def get_pokemon_image_by_korean_name(query_name, start_id, end_id):
+  """세대 ID 범위 내에서 한글 이름과 일치하는 포켓몬을 찾아
+  공식 아트워크 이미지 URL을 반환합니다. 못 찾으면 빈 문자열을 반환합니다."""
+  query_name = (query_name or "").strip()
+  if not query_name:
+    return ""
+
+  # "다이나맥스 리자몽" 처럼 접두어가 붙은 이름은 원래 이름으로도 시도합니다.
+  candidates = [query_name]
+  for prefix in ("다이나맥스 ", "메가", "원시"):
+    if query_name.startswith(prefix) and query_name != prefix:
+      stripped = query_name[len(prefix):]
+      if stripped and stripped not in candidates:
+        candidates.append(stripped)
+
+  for name in candidates:
+    for p_id in range(start_id, end_id + 1):
+      ko_name = get_pokemon_name_by_id(p_id)
+      if ko_name == name:
+        try:
+          p_res = requests.get(
+              f"https://pokeapi.co/api/v2/pokemon/{p_id}", timeout=2
+          )
+          if p_res.status_code == 200:
+            p_data = p_res.json()
+            return (
+                p_data["sprites"]["other"]["official-artwork"]["front_default"]
+                or p_data["sprites"]["front_default"]
+                or ""
+            )
+        except Exception:
+          pass
+  return ""
+
+
 # 사이드바 네비게이션
 st.sidebar.title("⚡ 포켓몬 위키 네비게이션")
 if st.sidebar.button("🏠 메인 메뉴", use_container_width=True):
@@ -2424,11 +2468,26 @@ elif st.session_state.current_page == "인물 도감":
 
           st.markdown("### 2. 사용 포켓몬")
           if char["pokemon"]:
-            pokemon_chips = " ".join(
-                f"<span class='type-chip' style='background-color:{gen_color};'>{p}</span>"
-                for p in char["pokemon"]
-            )
-            st.markdown(pokemon_chips, unsafe_allow_html=True)
+            start_id, end_id = get_generation_id_range(g_name)
+            with st.spinner("사용 포켓몬 이미지를 불러오는 중..."):
+              pkmn_cols = st.columns(len(char["pokemon"]))
+              for p_col, p_name in zip(pkmn_cols, char["pokemon"]):
+                with p_col:
+                  img_url = get_pokemon_image_by_korean_name(
+                      p_name, start_id, end_id
+                  )
+                  if img_url:
+                    st.image(img_url, caption=p_name, use_container_width=True)
+                  else:
+                    st.markdown(
+                        f"""
+                        <div style='text-align:center;'>
+                            <span class='type-chip' style='background-color:{gen_color};'>{p_name}</span><br>
+                            <span style='font-size:0.75rem; color:#999;'>이미지 없음</span>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
           else:
             st.write("정보 없음")
 
@@ -2437,10 +2496,14 @@ elif st.session_state.current_page == "인물 도감":
               f"<div class='char-name-banner' style='background-color:{gen_color};'>{char['name']}</div>",
               unsafe_allow_html=True,
           )
-          st.markdown(
-              f"<div class='char-portrait' style='background-color:{gen_color}33; border:2px solid {gen_color};'>👤</div>",
-              unsafe_allow_html=True,
-          )
+          char_image_url = char.get("image", "")
+          if char_image_url:
+            st.image(char_image_url, use_container_width=True)
+          else:
+            st.markdown(
+                f"<div class='char-portrait' style='background-color:{gen_color}33; border:2px solid {gen_color};'>👤</div>",
+                unsafe_allow_html=True,
+            )
           st.markdown(
               f"""
               <table class="char-info-table">
