@@ -2510,6 +2510,98 @@ for _name, _en, _summary, _detail in [
   })
 
 
+
+# ==================== 확장 아이템 도감 ====================
+# 나무위키의 포켓몬스터/도구 분류를 참고하여 기존 290종에 포함되지 않은
+# 일반 아이템까지 확장합니다.
+#
+# 아이템의 한국어 이름/기본 분류는 PokeAPI 공개 정적 데이터에서 가져오며,
+# 실제 상세 효과는 선택한 아이템을 열 때 PokeAPI에서 가져옵니다.
+# 데이터는 Streamlit 캐시에 저장되어 반복 요청을 줄입니다.
+
+ITEM_DATA_URL = (
+    "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/"
+    "data/v2/csv/items.csv"
+)
+ITEM_NAMES_URL = (
+    "https://raw.githubusercontent.com/pokepc/pokeapi-PRs/master/"
+    "data/v2/csv/item_names.csv"
+)
+ITEM_CATEGORY_URL = "https://pokeapi.co/api/v2/item-category?limit=100"
+
+ITEM_EXPANSION_GROUPS = {
+    "포획 도구": {"color":"#EF5350","icon":"⚪","desc":"야생 포켓몬을 포획하거나 포획 조건을 보조하는 도구입니다.","categories":{"standard-balls","special-balls","catching-bonus"}},
+    "회복·치료 도구": {"color":"#66BB6A","icon":"💊","desc":"HP, PP, 기절, 상태이상 등을 회복하거나 치료하는 도구입니다.","categories":{"healing","medicine","status-cures","revival","pp-recovery","picky-healing"}},
+    "육성 도구": {"color":"#26A69A","icon":"🧪","desc":"노력치·경험치·성격·훈련 등을 관리하는 육성용 도구입니다.","categories":{"vitamins","training","effort-training","effort-drop","nature-mints","species-candies"}},
+    "진화·특수진화": {"color":"#FFB300","icon":"🔮","desc":"진화나 특수한 폼 변화에 사용되는 도구입니다.","categories":{"evolution","mega-stones","memories","plates","jewels","z-crystals","tera-shard"}},
+    "배틀·지니는 도구": {"color":"#5C6BC0","icon":"⚔️","desc":"포켓몬이 지니거나 배틀에서 사용하여 전투에 영향을 주는 도구입니다.","categories":{"held-items","choice","bad-held-items","in-a-pinch","stat-boosts","type-enhancement","type-protection","scarves","species-specific"}},
+    "나무열매·재배": {"color":"#8BC34A","icon":"🍒","desc":"배틀이나 필드에서 사용되는 나무열매와 재배 관련 도구입니다.","categories":{"berries","mulch"}},
+    "필드·탐험 도구": {"color":"#42A5F5","icon":"🧭","desc":"탐험, 이동, 야생 포켓몬 탐색 등 필드에서 사용하는 도구입니다.","categories":{"spelunking","flutes","gameplay","dex-completion"}},
+    "스토리·중요한 물건": {"color":"#AB47BC","icon":"🔑","desc":"스토리 진행, 이벤트, 특정 장소나 기능을 해금하는 중요한 물건입니다.","categories":{"key-items","plot-advancement","event-items"}},
+    "보물·수집품": {"color":"#FFA726","icon":"💰","desc":"교환·판매·수집 등을 목적으로 하는 보물과 수집용 도구입니다.","categories":{"collectibles","loot","other"}},
+}
+_ITEM_EXPANSION_CATEGORY_LOOKUP={}
+for _g,_d in ITEM_EXPANSION_GROUPS.items():
+    for _c in _d["categories"]: _ITEM_EXPANSION_CATEGORY_LOOKUP[_c]=_g
+
+@st.cache_data(ttl=86400)
+def fetch_expanded_item_data():
+    import csv,io
+    try:
+        a=requests.get(ITEM_DATA_URL,timeout=10); b=requests.get(ITEM_NAMES_URL,timeout=10); c=requests.get(ITEM_CATEGORY_URL,timeout=10)
+        if a.status_code!=200 or b.status_code!=200 or c.status_code!=200: return []
+        catmap={}
+        for x in c.json().get("results",[]):
+            try: catmap[int(x["url"].rstrip("/").split("/")[-1])]=x["name"]
+            except Exception: pass
+        names={}
+        for row in csv.DictReader(io.StringIO(b.text)):
+            try:
+                if int(row["local_language_id"])==3: names[int(row["item_id"])]=row["name"]
+            except Exception: pass
+        existing={it.get("en") for cd in ITEM_CATEGORIES.values() for it in cd["items"] if it.get("en")}
+        result=[]
+        for row in csv.DictReader(io.StringIO(a.text)):
+            try: item_id=int(row["id"]); category=catmap.get(int(row["category_id"]),"")
+            except Exception: continue
+            en=row["identifier"]; group=_ITEM_EXPANSION_CATEGORY_LOOKUP.get(category)
+            if not group or en in existing or item_id not in names: continue
+            desc=ITEM_EXPANSION_GROUPS[group]["desc"]
+            result.append({"id":item_id,"name":names[item_id],"en":en,"category":category,"group":group,"summary":desc,"detail":desc+" 작품과 세대에 따라 세부 효과와 입수 방법이 달라질 수 있습니다.","expanded":True})
+        result.sort(key=lambda x:x["id"]); return result
+    except Exception: return []
+
+def merge_expanded_items_into_categories():
+    for g,d in ITEM_EXPANSION_GROUPS.items():
+        ITEM_CATEGORIES.setdefault(g,{"color":d["color"],"icon":d["icon"],"desc":d["desc"],"items":[]})
+    existing={it.get("en") for cd in ITEM_CATEGORIES.values() for it in cd["items"] if it.get("en")}
+    for x in fetch_expanded_item_data():
+        if x["en"] in existing: continue
+        ITEM_CATEGORIES[x["group"]]["items"].append({"name":x["name"],"en":x["en"],"summary":x["summary"],"detail":x["detail"],"expanded":True,"source_category":x["category"]})
+        existing.add(x["en"])
+
+@st.cache_data(ttl=86400)
+def get_expanded_item_effect(en_name):
+    try:
+        r=requests.get(f"https://pokeapi.co/api/v2/item/{urllib.parse.quote(en_name)}",timeout=6)
+        if r.status_code!=200: return None
+        data=r.json(); short=""; effect=""
+        for e in data.get("effect_entries",[]):
+            if e.get("language",{}).get("name")=="ko": short=e.get("short_effect",""); effect=e.get("effect",""); break
+        if not short and not effect:
+            for e in data.get("effect_entries",[]):
+                if e.get("language",{}).get("name")=="en": short=translate_to_ko(e.get("short_effect","")); effect=translate_to_ko(e.get("effect","")); break
+        return {"short":short.replace("\n"," ").strip(),"effect":effect.replace("\n"," ").strip()}
+    except Exception: return None
+
+merge_expanded_items_into_categories()
+ITEM_CATEGORY_ORDER=[
+    "기술 강화 도구","능력치 강화 도구","전용 도구","체력 회복 도구","내성 도구","교체 도구","지속시간 증가 도구","자기 피해 도구","기타","메가스톤","진화의 돌","포켓볼","성격 민트","육성 도구",
+    "포획 도구","회복·치료 도구","진화·특수진화","배틀·지니는 도구","나무열매·재배","필드·탐험 도구","스토리·중요한 물건","보물·수집품",
+]
+ITEM_CATEGORY_ORDER=[x for x in ITEM_CATEGORY_ORDER if x in ITEM_CATEGORIES]
+
+
 @st.cache_data(ttl=86400)
 def get_item_image_url(en_name):
   """도구의 영문 슬러그로 PokeAPI 스프라이트 저장소의 아이콘 URL을 만듭니다."""
@@ -3416,8 +3508,16 @@ elif st.session_state.current_page == "아이템 도감":
       with col_right:
         st.markdown("### 개요")
         st.info(item["summary"])
+
+        expanded_effect = get_expanded_item_effect(item["en"]) if item.get("expanded") else None
         st.markdown("### 상세 설명")
-        st.write(item["detail"])
+        if expanded_effect and (expanded_effect.get("short") or expanded_effect.get("effect")):
+          if expanded_effect.get("short"):
+            st.write(expanded_effect["short"])
+          if expanded_effect.get("effect"):
+            st.write(expanded_effect["effect"])
+        else:
+          st.write(item["detail"])
 
   elif st.session_state.item_category:
     # ---------- 카테고리별 아이템 목록 ----------
@@ -3489,45 +3589,31 @@ elif st.session_state.current_page == "아이템 도감":
         unsafe_allow_html=True,
     )
 
-    category_names = list(ITEM_CATEGORIES.keys())
     total_count = sum(len(c["items"]) for c in ITEM_CATEGORIES.values())
 
-    tiles = [
-        {
-            "name": "전체 도구칸",
-            "color": "#008275",
-            "icon": "🎒",
-            "sub": f"전체 도구 {total_count}종 모아보기",
-        }
-    ] + [
-        {
-            "name": n,
-            "color": ITEM_CATEGORIES[n]["color"],
-            "icon": ITEM_CATEGORIES[n]["icon"],
-            "sub": f"{len(ITEM_CATEGORIES[n]['items'])}종",
-        }
-        for n in category_names
-    ]
+    st.markdown(
+        f"""<div class="char-banner" style="background-color:#008275;">🎒 전체 도구칸<br><span style="font-size:0.85rem;font-weight:normal;">등록된 도구 {total_count}종 모아보기</span></div>""",
+        unsafe_allow_html=True,
+    )
+    if st.button("전체 도구칸 보기", key="item_cat_btn_all", use_container_width=True):
+      st.session_state.item_category="전체 도구칸"
+      st.rerun()
 
-    n_cols = 3
-    for row_start in range(0, len(tiles), n_cols):
-      row_tiles = tiles[row_start:row_start + n_cols]
-      cols = st.columns(n_cols)
-      for c_idx, tile in enumerate(row_tiles):
-        with cols[c_idx]:
-          st.markdown(
-              f"""
-              <div class="char-banner" style="background-color: {tile['color']};">
-                  {tile['icon']} {tile['name']}<br>
-                  <span style="font-size: 0.85rem; font-weight: normal;">{tile['sub']}</span>
-              </div>
-              """,
-              unsafe_allow_html=True,
-          )
-          if st.button(
-              f"{tile['name']} 보기",
-              key=f"item_cat_btn_{row_start}_{c_idx}",
-              use_container_width=True,
-          ):
-            st.session_state.item_category = tile["name"]
-            st.rerun()
+    category_sections=[
+      ("⚔️ 배틀·육성 도구", [n for n in ITEM_CATEGORY_ORDER if n in {"기술 강화 도구","능력치 강화 도구","전용 도구","체력 회복 도구","내성 도구","교체 도구","지속시간 증가 도구","자기 피해 도구","기타","메가스톤","진화의 돌","포켓볼","성격 민트","육성 도구"}]),
+      ("🧰 일반·스토리 도구", [n for n in ITEM_CATEGORY_ORDER if n in {"포획 도구","회복·치료 도구","진화·특수진화","배틀·지니는 도구","나무열매·재배","필드·탐험 도구","스토리·중요한 물건","보물·수집품"}]),
+    ]
+    for section_title, section_categories in category_sections:
+      if not section_categories: continue
+      st.markdown(f"<h3 class='section-title'>{section_title}</h3>", unsafe_allow_html=True)
+      tiles=[{"name":n,"color":ITEM_CATEGORIES[n]["color"],"icon":ITEM_CATEGORIES[n]["icon"],"sub":f"{len(ITEM_CATEGORIES[n]['items'])}종"} for n in section_categories]
+      n_cols=3
+      for row_start in range(0,len(tiles),n_cols):
+        row_tiles=tiles[row_start:row_start+n_cols]
+        cols=st.columns(n_cols)
+        for c_idx,tile in enumerate(row_tiles):
+          with cols[c_idx]:
+            st.markdown(f"""<div class="char-banner" style="background-color:{tile['color']};">{tile['icon']} {tile['name']}<br><span style="font-size:0.85rem;font-weight:normal;">{tile['sub']}</span></div>""",unsafe_allow_html=True)
+            if st.button(f"{tile['name']} 보기",key=f"item_cat_btn_{section_title}_{row_start}_{c_idx}",use_container_width=True):
+              st.session_state.item_category=tile["name"]
+              st.rerun()
