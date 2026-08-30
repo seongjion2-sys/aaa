@@ -786,6 +786,51 @@ def character_sort_key(char):
   return len(CHARACTER_CATEGORY_ORDER)
 
 
+# 세대별 대표 데뷔작(정식 발매 타이틀)
+GENERATION_TO_GAME = {
+    "1세대 (관동)": "포켓몬스터 레드·그린",
+    "2세대 (성도)": "포켓몬스터 골드·실버",
+    "3세대 (호연)": "포켓몬스터 루비·사파이어",
+    "4세대 (신오)": "포켓몬스터 디아루가·펄기아",
+    "5세대 (하나)": "포켓몬스터 블랙·화이트",
+    "6세대 (칼로스)": "포켓몬스터 X·Y",
+    "7세대 (알로라)": "포켓몬스터 썬·문",
+    "8세대 (가라르)": "포켓몬스터 소드·실드",
+    "9세대 (팔데아)": "포켓몬스터 스칼렛·바이올렛",
+    "히스이 지방": "포켓몬 레전드 아르세우스",
+}
+
+# 확인된 인물 한정 추가 정보 (성별/나이/출신지/가족관계 등). 정보가 없는 인물은
+# 기본값("정보 없음")으로 표시됩니다.
+CHARACTER_EXTRA_INFO = {
+    "레드": {
+        "gender": "남성",
+        "age": "11세(RGBY/FRLG) → 14세(GSC/HGSS) → 불명(SM/USUM)",
+        "hometown": "태초마을",
+        "family": "아버지(불명), 어머니",
+    },
+    "그린": {
+        "gender": "남성",
+        "age": "11세(RGBY/FRLG) → 14세(GSC/HGSS)",
+        "hometown": "태초마을",
+        "family": "여동생(블루)",
+    },
+    "오박사": {
+        "gender": "남성",
+        "age": "불명(노년)",
+        "hometown": "태초마을",
+        "family": "손자 그린",
+    },
+}
+
+
+def get_character_extra_info(char_name):
+  return CHARACTER_EXTRA_INFO.get(
+      char_name,
+      {"gender": "정보 없음", "age": "정보 없음", "hometown": "정보 없음", "family": "정보 없음"},
+  )
+
+
 # 한글 추천 포켓몬을 위한 영문 매핑
 FEATURED_POKEMON_MAP = {
     "켄타로스": "tauros",
@@ -967,6 +1012,51 @@ st.markdown(
         padding: 20px;
         background-color: transparent;
         margin-bottom: 15px;
+    }
+    .char-info-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+        border: 1px solid #444;
+    }
+    .char-info-table th {
+        background-color: #7a2020;
+        color: white;
+        padding: 10px 8px;
+        border: 1px solid #333;
+        text-align: left;
+        width: 32%;
+        font-weight: bold;
+    }
+    .char-info-table td {
+        background-color: #1a1a1a;
+        color: #e8c46a;
+        padding: 10px 8px;
+        border: 1px solid #333;
+        text-align: center;
+        font-weight: bold;
+    }
+    .char-name-banner {
+        border-radius: 10px;
+        padding: 14px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+        border: 2px solid #ffffff;
+        margin-bottom: 12px;
+    }
+    .char-portrait {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 5rem;
+        margin-bottom: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
     .type-table {
         width: 100%;
@@ -2298,14 +2388,74 @@ elif st.session_state.current_page == "인물 도감":
     g_data = CHARACTER_GENERATIONS[g_name]
 
     if st.session_state.selected_character:
-      # 인물 상세 페이지 (준비 중)
+      # 인물 상세 페이지
       if st.button("◀ 인물 목록으로", use_container_width=False):
         st.session_state.selected_character = None
         st.rerun()
 
       char_name = st.session_state.selected_character
-      st.title(f"👤 {char_name}")
-      st.info("준비 중인 페이지입니다.")
+      char = next(
+          (c for c in g_data["characters"] if c["name"] == char_name), None
+      )
+
+      if char is None:
+        st.warning("인물 정보를 찾을 수 없습니다.")
+      else:
+        category = get_character_category(char)
+        extra = get_character_extra_info(char["name"])
+        debut_game = GENERATION_TO_GAME.get(g_name, "정보 없음")
+        gen_color = g_data["color"]
+
+        st.markdown(
+            f"# {char['name']} <span style='font-size:1rem; color:#aaaaaa;'>({char['title']})</span>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<span class='type-chip' style='background-color:{gen_color};'>{category}</span> "
+            f"<span class='type-chip' style='background-color:#555555;'>{char['type']}</span>",
+            unsafe_allow_html=True,
+        )
+
+        col_left, col_right = st.columns([2, 1])
+
+        with col_left:
+          st.markdown("### 1. 개요 및 설명")
+          st.info(char["desc"])
+
+          st.markdown("### 2. 사용 포켓몬")
+          if char["pokemon"]:
+            pokemon_chips = " ".join(
+                f"<span class='type-chip' style='background-color:{gen_color};'>{p}</span>"
+                for p in char["pokemon"]
+            )
+            st.markdown(pokemon_chips, unsafe_allow_html=True)
+          else:
+            st.write("정보 없음")
+
+        with col_right:
+          st.markdown(
+              f"<div class='char-name-banner' style='background-color:{gen_color};'>{char['name']}</div>",
+              unsafe_allow_html=True,
+          )
+          st.markdown(
+              f"<div class='char-portrait' style='background-color:{gen_color}33; border:2px solid {gen_color};'>👤</div>",
+              unsafe_allow_html=True,
+          )
+          st.markdown(
+              f"""
+              <table class="char-info-table">
+                  <tr><th>성별</th><td>{extra['gender']}</td></tr>
+                  <tr><th>나이</th><td>{extra['age']}</td></tr>
+                  <tr><th>트레이너 계급</th><td>{category}</td></tr>
+                  <tr><th>지방</th><td>{g_name}</td></tr>
+                  <tr><th>출신지</th><td>{extra['hometown']}</td></tr>
+                  <tr><th>가족 관계</th><td>{extra['family']}</td></tr>
+                  <tr><th>주된 타입</th><td>{char['type']}</td></tr>
+                  <tr><th>데뷔작</th><td>{debut_game}</td></tr>
+              </table>
+              """,
+              unsafe_allow_html=True,
+          )
 
     else:
       if st.button("◀ 세대 목록으로", use_container_width=False):
