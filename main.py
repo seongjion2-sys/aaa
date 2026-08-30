@@ -2134,17 +2134,6 @@ _TYPE_ENHANCE_ITEMS = {
     "ghost": ("저주의부적", "spell-tag"), "steel": ("금속코트", "metal-coat"),
 }
 _TYPE_GEMS = {t: (n + "주얼", f"{t}-gem") for t, n in TYPE_NAME_MAP.items()}
-_TYPE_Z_CRYSTALS = {
-    "normal": ("노말리움Z", "normalium-z"), "fire": ("파이어리움Z", "firium-z"),
-    "water": ("워터리움Z", "waterium-z"), "electric": ("일렉트리움Z", "electrium-z"),
-    "grass": ("그래스리움Z", "grassium-z"), "ice": ("아이시움Z", "icium-z"),
-    "fighting": ("파이팅리움Z", "fightinium-z"), "poison": ("포이즌리움Z", "poisonium-z"),
-    "ground": ("그라운드리움Z", "groundium-z"), "flying": ("플라잉리움Z", "flyinium-z"),
-    "psychic": ("사이킥리움Z", "psychium-z"), "bug": ("버그리움Z", "buginium-z"),
-    "rock": ("록키움Z", "rockium-z"), "ghost": ("고스트리움Z", "ghostium-z"),
-    "dragon": ("드래곤리움Z", "dragonium-z"), "dark": ("다크리움Z", "darkinium-z"),
-    "steel": ("스틸리움Z", "steelium-z"), "fairy": ("페어리움Z", "fairium-z"),
-}
 _TYPE_PLATES = {
     "fighting": ("격투의판", "fist-plate"), "flying": ("비행의판", "sky-plate"),
     "poison": ("맹독의판", "toxic-plate"), "ground": ("대지의판", "earth-plate"),
@@ -2183,12 +2172,6 @@ for _t, (_ko, _en) in _TYPE_GEMS.items():
       "name": _ko, "en": _en,
       "summary": f"{TYPE_NAME_MAP[_t]} 타입 기술 위력 1.3배(1회용)",
       "detail": f"{TYPE_NAME_MAP[_t]} 타입 기술을 사용할 때 소모되어 그 기술의 위력을 1.3배로 올려주는 1회용 강화 도구입니다.",
-  })
-for _t, (_ko, _en) in _TYPE_Z_CRYSTALS.items():
-  ITEM_CATEGORIES["기술 강화 도구"]["items"].append({
-      "name": _ko, "en": _en,
-      "summary": f"{TYPE_NAME_MAP[_t]} 타입 Z기술 발동",
-      "detail": f"{TYPE_NAME_MAP[_t]} 타입 기술을 지니고 있으면, 배틀 중 한 번 그 기술을 강력한 Z기술로 바꿔 사용할 수 있게 해주는 도구입니다.",
   })
 for _t, (_ko, _en) in _TYPE_PLATES.items():
   ITEM_CATEGORIES["전용 도구"]["items"].append({
@@ -2268,6 +2251,178 @@ for _name, _en, _summary, _detail in [
 ]:
   ITEM_CATEGORIES["기타"]["items"].append({
       "name": _name, "en": _en, "summary": _summary, "detail": _detail,
+  })
+
+
+# ---- 생존/내성 계열 도구 추가 ----
+for _name, _en, _summary, _detail in [
+    ("기합의띠", "focus-sash", "체력 최대일 때 즉사기 1회 생존",
+     "체력이 가득 찬 상태에서 한 방에 기절할 만한 데미지를 받으면, 대신 체력 1을 남기고 버티게 해주는 1회용 도구입니다. 배수의 진 특성과 함께 자주 쓰입니다."),
+    ("기합의머리띠", "focus-band", "일정 확률로 즉사기 생존",
+     "기절할 데미지를 입어도 10% 확률로 체력 1을 남기고 버티게 해주는 도구입니다. 기합의띠와 달리 확률제이며 여러 번 발동할 수 있습니다."),
+]:
+  ITEM_CATEGORIES["내성 도구"]["items"].append({
+      "name": _name, "en": _en, "summary": _summary, "detail": _detail,
+  })
+
+# ---- 능력치 강화 계열 도구 추가 ----
+for _name, _en, _summary, _detail in [
+    ("돌격조끼", "assault-vest", "특수방어 1.5배 / 변화기 사용 불가",
+     "특수방어 실수치를 1.5배로 올려주지만, 지닌 포켓몬은 변화 기술을 전혀 사용할 수 없게 되는 도구입니다."),
+    ("펀치글러브", "punching-glove", "펀치 기술 위력 1.1배 / 접촉 판정 해제",
+     "펀치 계열 기술의 위력을 1.1배로 올려주고, 그 기술들이 접촉 판정을 받지 않게 만들어주는 도구입니다."),
+    ("약점보험", "weakness-policy", "효과가 굉장한 기술 피격 시 공격/특공 2랭크 상승",
+     "상성상 효과가 굉장한 기술에 맞으면 공격과 특수공격이 한꺼번에 2랭크씩 상승하고 사라지는 1회용 도구입니다."),
+    ("허탕보험", "blunder-policy", "기술이 빗나가면 스피드 2랭크 상승",
+     "사용한 기술이 빗나갔을 때 스피드가 2랭크 상승하고 사라지는 1회용 도구입니다."),
+    ("진화의휘석", "eviolite", "미진화 포켓몬 방어/특수방어 1.5배",
+     "아직 진화할 수 있는(최종 진화형이 아닌) 포켓몬이 지니면 방어와 특수방어 실수치가 1.5배로 상승하는 도구입니다."),
+    ("빛이끼", "luminous-moss", "물 기술 피격 시 특수방어 1랭크 상승",
+     "물 타입 기술에 맞으면 그 데미지를 견디고 특수방어가 1랭크 상승하는 1회용 도구입니다."),
+    ("눈덩이", "snowball", "얼음 기술 피격 시 공격 1랭크 상승",
+     "얼음 타입 기술에 맞으면 그 데미지를 견디고 공격이 1랭크 상승하는 1회용 도구입니다."),
+    ("룸서비스", "room-service", "트릭룸 상태에서 스피드 1랭크 하락",
+     "트릭룸이 깔린 상태로 필드에 나오면 스피드가 1랭크 하락하는 1회용 도구로, 트릭룸 활용 포켓몬에게 채용됩니다."),
+    ("목스프레이", "throat-spray", "소리 기술 사용 시 특수공격 1랭크 상승",
+     "소리를 내는 기술을 사용하면 특수공격이 1랭크 상승하는 도구입니다."),
+    ("흉내허브", "mirror-herb", "상대의 능력치 상승을 그대로 복사",
+     "상대 포켓몬의 능력치가 상승하면 그와 동일하게 자신의 능력치도 상승시켜 주고 사라지는 1회용 도구입니다."),
+    ("일렉트릭시드", "electric-seed", "일렉트릭필드에서 방어 1랭크 상승",
+     "필드에 일렉트릭필드가 깔려 있는 상태로 나오면 방어가 1랭크 상승하고 사라지는 시드 계열 도구입니다."),
+    ("그래스시드", "grassy-seed", "그래스필드에서 방어 1랭크 상승",
+     "필드에 그래스필드가 깔려 있는 상태로 나오면 방어가 1랭크 상승하고 사라지는 시드 계열 도구입니다."),
+    ("사이코시드", "psychic-seed", "사이코필드에서 특수방어 1랭크 상승",
+     "필드에 사이코필드가 깔려 있는 상태로 나오면 특수방어가 1랭크 상승하고 사라지는 시드 계열 도구입니다."),
+    ("미스트시드", "misty-seed", "미스트필드에서 특수방어 1랭크 상승",
+     "필드에 미스트필드가 깔려 있는 상태로 나오면 특수방어가 1랭크 상승하고 사라지는 시드 계열 도구입니다."),
+]:
+  ITEM_CATEGORIES["능력치 강화 도구"]["items"].append({
+      "name": _name, "en": _en, "summary": _summary, "detail": _detail,
+  })
+
+# ---- 기타 유명 배틀 도구 추가 ----
+for _name, _en, _summary, _detail in [
+    ("보호고글", "safety-goggles", "날씨 피해 무효 / 가루 기술 무효",
+     "우박 등 날씨로 인한 데미지를 받지 않으며, 포자, 맹독가루 등 가루 계열 기술에도 영향을 받지 않게 해주는 도구입니다."),
+    ("만능우산", "utility-umbrella", "쾌청·비 날씨 효과 무효화",
+     "쾌청이나 비가 내리는 동안에도 그 날씨로 인한 기술 위력 변화나 특성 효과를 받지 않게 해주는 도구입니다."),
+    ("튼튼한부츠", "heavy-duty-boots", "설치형 기술 및 지형 피해 무효",
+     "압정뿌리기, 스텔스록 등 필드에 설치된 기술의 효과를 받지 않게 해주고, 가시밭길 등 지형 데미지도 무시하게 해주는 도구입니다."),
+    ("보호패드", "protective-pads", "접촉 기술의 추가 효과로부터 보호",
+     "상대의 접촉 기술을 맞았을 때 발생하는 정전기, 흰가루 등 접촉 계열 추가 효과를 받지 않게 해주는 도구입니다."),
+    ("왕의징표", "king-s-rock", "공격 기술 명중 시 상대를 랜덤하게 풀죽게 함",
+     "데미지를 주는 기술을 맞히면 10% 확률로 상대를 풀죽게(그 턴 행동 불가) 만드는 도구입니다."),
+    ("재빠른손톱", "quick-claw", "일정 확률로 기술 우선 사용",
+     "기술의 우선도와 상관없이 20% 확률로 그 턴에 가장 먼저 행동하게 해주는 도구입니다."),
+    ("고급렌즈", "scope-lens", "급소에 맞는 확률 1랭크 상승",
+     "소지한 포켓몬이 급소를 맞출 확률을 1랭크 올려주는 도구입니다."),
+]:
+  ITEM_CATEGORIES["기타"]["items"].append({
+      "name": _name, "en": _en, "summary": _summary, "detail": _detail,
+  })
+
+# ---- 메가스톤 (6~7세대 메가진화용 도구, 총 46종) ----
+ITEM_CATEGORIES["메가스톤"] = {
+    "color": "#8B5CF6",
+    "icon": "💎",
+    "desc": "특정 포켓몬이 지니고 있으면 배틀 중 메가진화를 할 수 있게 해주는 전용 도구입니다.",
+    "items": [],
+}
+_MEGA_STONES = [
+    ("이상해꽃나이트", "venusaurite"), ("리자몽나이트X", "charizardite-x"),
+    ("리자몽나이트Y", "charizardite-y"), ("거북왕나이트", "blastoisinite"),
+    ("독침붕나이트", "beedrillite"), ("피죤투나이트", "pidgeotite"),
+    ("후디나이트", "alakazite"), ("야도란나이트", "slowbronite"),
+    ("쁘사이저나이트", "pinsirite"), ("갸라도스나이트", "gyaradosite"),
+    ("강철톤나이트", "steelixite"), ("헤라크로스나이트", "heracronite"),
+    ("나무킹나이트", "sceptilite"), ("번치코나이트", "blazikenite"),
+    ("대짱이나이트", "swampertite"), ("깜까미나이트", "sablenite"),
+    ("입치트나이트", "mawilite"), ("보스로라나이트", "aggronite"),
+    ("요가램나이트", "medichamite"), ("썬더볼트나이트", "manectite"),
+    ("파비코리나이트", "altarianite"), ("다크펫나이트", "banettite"),
+    ("앱솔나이트", "absolite"), ("얼음귀신나이트", "glalitite"),
+    ("라티아스나이트", "latiasite"), ("라티오스나이트", "latiosite"),
+    ("한카리아스나이트", "garchompite"), ("루카리오나이트", "lucarionite"),
+    ("디안시나이트", "diancite"), ("팬텀나이트", "gengarite"),
+    ("캥카나이트", "kangaskhanite"), ("프테라나이트", "aerodactylite"),
+    ("뮤츠나이트X", "mewtwonite-x"), ("뮤츠나이트Y", "mewtwonite-y"),
+    ("핫삼나이트", "scizorite"), ("헬가나이트", "houndoominite"),
+    ("마기라스나이트", "tyranitarite"), ("가디안나이트", "gardevoirite"),
+    ("전룡나이트", "ampharosite"), ("샤크니아나이트", "sharpedonite"),
+    ("폭타나이트", "cameruptite"), ("보만다나이트", "salamencite"),
+    ("메타그로스나이트", "metagrossite"), ("이어롭나이트", "lopunnite"),
+    ("눈설왕나이트", "abomasite"), ("엘레이드나이트", "galladite"),
+    ("다부니나이트", "audinite"),
+]
+for _ko, _en in _MEGA_STONES:
+  _base = _ko.replace("나이트", "")
+  ITEM_CATEGORIES["메가스톤"]["items"].append({
+      "name": _ko, "en": _en,
+      "summary": f"{_base} 전용 · 메가진화",
+      "detail": f"{_base}가 지니고 배틀에 나가면 트레이너의 키스톤과 함께 메가진화하여 능력치와 특성이 강화된 모습으로 변합니다.",
+  })
+
+# ---- 진화의 돌 ----
+ITEM_CATEGORIES["진화의 돌"] = {
+    "color": "#FFB300",
+    "icon": "🔮",
+    "desc": "특정 포켓몬에게 사용하면 레벨과 상관없이 즉시 진화시켜 주는 소모성 도구입니다.",
+    "items": [],
+}
+for _name, _en, _summary in [
+    ("불꽃의돌", "fire-stone", "불꽃 타입 등 특정 포켓몬을 진화시킴"),
+    ("물의돌", "water-stone", "물 타입 등 특정 포켓몬을 진화시킴"),
+    ("천둥의돌", "thunder-stone", "전기 타입 등 특정 포켓몬을 진화시킴"),
+    ("리프의돌", "leaf-stone", "풀 타입 등 특정 포켓몬을 진화시킴"),
+    ("달의돌", "moon-stone", "특정 포켓몬을 진화시킴"),
+    ("태양의돌", "sun-stone", "특정 포켓몬을 진화시킴"),
+    ("빛의돌", "shiny-stone", "특정 포켓몬을 진화시킴"),
+    ("어둠의돌", "dusk-stone", "특정 포켓몬을 진화시킴"),
+    ("각성의돌", "dawn-stone", "특정 성별의 특정 포켓몬을 진화시킴"),
+    ("얼음의돌", "ice-stone", "특정 포켓몬을 진화시킴"),
+    ("동글동글돌", "oval-stone", "특정 조건에서 해피너스 이전 단계 포켓몬을 진화시킴"),
+]:
+  ITEM_CATEGORIES["진화의 돌"]["items"].append({
+      "name": _name, "en": _en, "summary": _summary,
+      "detail": f"{_summary}, 사용하면 사라지는 소모성 진화 도구입니다. B버튼으로 진화를 취소할 수 없습니다.",
+  })
+
+# ---- 몬스터볼 종류 ----
+ITEM_CATEGORIES["포켓볼"] = {
+    "color": "#EF5350",
+    "icon": "⚪",
+    "desc": "야생 포켓몬을 포획할 때 사용하는 도구로, 종류에 따라 포획 확률이나 발동 조건이 다릅니다.",
+    "items": [],
+}
+for _name, _en, _summary in [
+    ("몬스터볼", "poke-ball", "가장 기본적인 포획용 볼"),
+    ("슈퍼볼", "great-ball", "몬스터볼보다 포획률이 높은 볼"),
+    ("하이퍼볼", "ultra-ball", "슈퍼볼보다 포획률이 더 높은 볼"),
+    ("마스터볼", "master-ball", "야생 포켓몬을 100% 포획하는 최상급 볼"),
+    ("사파리볼", "safari-ball", "사파리존 전용 포획용 볼"),
+    ("프리미어볼", "premier-ball", "몬스터볼을 다량 구입하면 덤으로 주는 볼"),
+    ("네트볼", "net-ball", "벌레·물 타입 포켓몬 포획률이 오르는 볼"),
+    ("다이브볼", "dive-ball", "물속·수중 포켓몬 포획률이 오르는 볼"),
+    ("네스트볼", "nest-ball", "레벨이 낮은 포켓몬일수록 포획률이 오르는 볼"),
+    ("타이머볼", "timer-ball", "배틀 턴수가 길어질수록 포획률이 오르는 볼"),
+    ("리피트볼", "repeat-ball", "이미 도감에 등록된 포켓몬 포획률이 오르는 볼"),
+    ("럭셔리볼", "luxury-ball", "잡은 포켓몬의 친밀도가 더 잘 오르는 볼"),
+    ("힐볼", "heal-ball", "포획과 동시에 포켓몬의 상태를 완전 회복시키는 볼"),
+    ("다크볼", "dusk-ball", "밤이나 동굴 등 어두운 곳에서 포획률이 오르는 볼"),
+    ("퀵볼", "quick-ball", "배틀 시작 직후 사용하면 포획률이 크게 오르는 볼"),
+    ("레벨볼", "level-ball", "자신의 포켓몬보다 레벨이 낮을수록 포획률이 오르는 볼"),
+    ("루어볼", "lure-ball", "낚시로 낚은 포켓몬 포획률이 오르는 볼"),
+    ("문볼", "moon-ball", "달의돌로 진화하는 계열 포켓몬 포획률이 오르는 볼"),
+    ("러브러브볼", "love-ball", "자신의 포켓몬과 성별이 다른 같은 종 포켓몬 포획률이 오르는 볼"),
+    ("헤비볼", "heavy-ball", "무게가 무거운 포켓몬일수록 포획률이 오르는 볼"),
+    ("프렌드볼", "friend-ball", "잡은 포켓몬의 초기 친밀도가 높아지는 볼"),
+    ("스피드볼", "fast-ball", "재빠른 포켓몬 포획률이 오르는 볼"),
+    ("드림볼", "dream-ball", "꿈의 세계·자고 있는 포켓몬 포획에 쓰이는 볼"),
+    ("파크볼", "park-ball", "포켓몬 자연공원 대회 전용 볼"),
+]:
+  ITEM_CATEGORIES["포켓볼"]["items"].append({
+      "name": _name, "en": _en, "summary": _summary,
+      "detail": f"{_summary}. 야생 포켓몬에게 던져 사용하는 포획 전용 도구입니다.",
   })
 
 
