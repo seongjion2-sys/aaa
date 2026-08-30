@@ -1441,251 +1441,191 @@ def render_type_table(grouped_data, is_defense=True):
 
 
 @st.cache_data(ttl=604800)
-@st.cache_data(ttl=604800)
-def get_namu_dex_description(pokemon_id, korean_name):
-  """나무위키 포켓몬 문서의 '도감 설명' 표에서 게임 버전별 설명을 가져옵니다.
+def translate_to_ko(text):
+  """영어 도감 설명을 한국어로 변환합니다.
 
-  나무위키 문서는 단순 텍스트 순서가 아니라 표 구조로 되어 있으므로,
-  HTML의 table/tr/td 구조를 우선 파싱합니다.
-
-  반환값:
-    {
-      "scarlet": "...",
-      "violet": "...",
-      "pla": "...",
-      "default": "..."
-    }
+  PokeAPI의 최신 포켓몬(특히 #899~#1025)은 한국어 flavor_text가
+  없는 경우가 있습니다. 이 경우 번역 서버를 순차적으로 사용합니다.
+  번역 실패 결과를 캐시하지 않는 것이 중요합니다.
   """
-  if not korean_name or not (899 <= int(pokemon_id) <= 1025):
-    return None
+  if not text:
+    return ""
 
+  clean_text = (
+      str(text)
+      .replace("\n", " ")
+      .replace("\f", " ")
+      .strip()
+  )
+
+  # 이미 한국어라면 그대로 반환
+  korean_count = sum("\uac00" <= ch <= "\ud7a3" for ch in clean_text)
+  if korean_count >= 3:
+    return clean_text
+
+  # 1차: Google Translate 비공식 웹 엔드포인트
   try:
-    from bs4 import BeautifulSoup
+    res = requests.get(
+        "https://translate.googleapis.com/translate_a/single",
+        params={
+            "client": "gtx",
+            "sl": "en",
+            "tl": "ko",
+            "dt": "t",
+            "q": clean_text,
+        },
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=10,
+    )
+    if res.status_code == 200:
+      data = res.json()
+      translated = "".join(
+          part[0]
+          for part in data[0]
+          if isinstance(part, list) and len(part) > 0 and part[0]
+      ).strip()
 
-    page_names = [
-        korean_name,
-        f"{korean_name} (포켓몬)",
-    ]
-
-    soup = None
-
-    for page_name in page_names:
-      url = "https://namu.moe/w/" + urllib.parse.quote(page_name, safe="")
-      res = requests.get(
-          url,
-          headers={
-              "User-Agent": (
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                  "AppleWebKit/537.36 Chrome/131.0 Safari/537.36"
-              )
-          },
-          timeout=10,
-      )
-
-      if res.status_code == 200 and len(res.text) > 500:
-        soup = BeautifulSoup(res.text, "html.parser")
-        break
-
-    if soup is None:
-      return None
-
-    for tag in soup(["script", "style", "noscript", "svg"]):
-      tag.decompose()
-
-    def clean(value):
-      if value is None:
-        return ""
-      return (
-          " ".join(str(value).replace("\n", " ").replace("\f", " ").split())
-          .strip()
-      )
-
-    def is_korean(value):
-      return any("\uac00" <= ch <= "\ud7a3" for ch in value)
-
-    # ------------------------------------------------------------
-    # 1. "도감 설명"이라는 제목이 포함된 영역을 찾습니다.
-    # ------------------------------------------------------------
-    dex_heading = None
-
-    for heading in soup.find_all(["h2", "h3", "h4", "h5", "div"]):
-      value = clean(heading.get_text(" ", strip=True))
-      if value == "도감 설명" or value.startswith("도감 설명"):
-        dex_heading = heading
-        break
-
-    # ------------------------------------------------------------
-    # 2. 가장 중요한 부분:
-    #    도감 설명 표의 행/셀을 직접 읽습니다.
-    #
-    #    나무위키 HTML 구조가 바뀌어도 "스칼렛", "바이올렛",
-    #    "PLA"가 들어간 셀을 기준으로 찾도록 합니다.
-    # ------------------------------------------------------------
-    result = {
-        "scarlet": None,
-        "violet": None,
-        "pla": None,
-        "default": None,
-    }
-
-    # 도감 설명 제목 이후의 테이블을 우선 검색합니다.
-    tables = soup.find_all("table")
-
-    for table in tables:
-      # 도감 설명 제목보다 앞쪽에 있는 표는 우선순위를 낮춥니다.
-      if dex_heading is not None:
-        try:
-          if not (
-              table == dex_heading
-              or dex_heading.find_next("table") is table
-              or dex_heading in table.parents
-          ):
-            # 아래 텍스트 검색으로 도감 표 여부를 확인하므로 continue하지 않습니다.
-            pass
-        except Exception:
-          pass
-
-      rows = table.find_all("tr")
-      table_rows = []
-
-      for row in rows:
-        cells = row.find_all(["th", "td"])
-        values = [clean(cell.get_text(" ", strip=True)) for cell in cells]
-        values = [v for v in values if v]
-        if values:
-          table_rows.append(values)
-
-      if not table_rows:
-        continue
-
-      table_text = " ".join(" ".join(row) for row in table_rows)
-
-      # 포켓몬 도감 설명 표인지 판단
-      has_version = any(
-          key in table_text
-          for key in ["스칼렛", "바이올렛", "PLA", "레전즈 아르세우스"]
-      )
-
-      if not has_version:
-        continue
-
-      # 표 안의 각 행을 분석
-      for row in table_rows:
-        for idx, value in enumerate(row):
-          # PLA
-          if value in {"PLA", "레전즈 아르세우스", "LEGENDS 아르세우스"}:
-            candidates = row[idx + 1:]
-            for candidate in candidates:
-              candidate = clean(candidate)
-              if is_korean(candidate) and len(candidate) >= 8:
-                result["pla"] = candidate
-                break
-
-          # 스칼렛
-          elif value == "스칼렛":
-            candidates = row[idx + 1:]
-            for candidate in candidates:
-              candidate = clean(candidate)
-              if is_korean(candidate) and len(candidate) >= 8:
-                result["scarlet"] = candidate
-                break
-
-          # 바이올렛
-          elif value == "바이올렛":
-            candidates = row[idx + 1:]
-            for candidate in candidates:
-              candidate = clean(candidate)
-              if is_korean(candidate) and len(candidate) >= 8:
-                result["violet"] = candidate
-                break
-
-      # 9세대 표에서 두 설명을 모두 찾았으면 충분합니다.
-      if result["scarlet"] and result["violet"]:
-        break
-
-    # ------------------------------------------------------------
-    # 3. HTML 표가 div 기반으로 렌더링되는 경우를 위한 fallback.
-    #    이 경우에도 "스칼렛/바이올렛" 바로 다음 한국어 문장을
-    #    가져오되, 진화/능력치 등의 다른 섹션은 제외합니다.
-    # ------------------------------------------------------------
-    if not (result["scarlet"] or result["violet"] or result["pla"]):
-      raw_lines = []
-      for line in soup.get_text("\n", strip=True).splitlines():
-        line = clean(line)
-        if line:
-          raw_lines.append(line)
-
-      for i, line in enumerate(raw_lines):
-        if line == "스칼렛":
-          for candidate in raw_lines[i + 1:i + 5]:
-            if is_korean(candidate) and len(candidate) >= 8:
-              result["scarlet"] = candidate
-              break
-
-        elif line == "바이올렛":
-          for candidate in raw_lines[i + 1:i + 5]:
-            if is_korean(candidate) and len(candidate) >= 8:
-              result["violet"] = candidate
-              break
-
-        elif line in {"PLA", "레전즈 아르세우스", "LEGENDS 아르세우스"}:
-          for candidate in raw_lines[i + 1:i + 5]:
-            if is_korean(candidate) and len(candidate) >= 8:
-              result["pla"] = candidate
-              break
-
-    # ------------------------------------------------------------
-    # 4. 기본 표시 설명:
-    #    899~905 = PLA
-    #    906~1025 = 스칼렛
-    # ------------------------------------------------------------
-    if 899 <= int(pokemon_id) <= 905:
-      result["default"] = result["pla"] or result["scarlet"] or result["violet"]
-    else:
-      result["default"] = result["scarlet"] or result["violet"]
-
-    if result["default"]:
-      return result
-
+      if translated and translated != clean_text:
+        return translated
   except Exception:
     pass
 
-  return None
+  # 2차: MyMemory 무료 번역 API
+  try:
+    res = requests.get(
+        "https://api.mymemory.translated.net/get",
+        params={
+            "q": clean_text,
+            "langpair": "en|ko",
+        },
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=10,
+    )
+    if res.status_code == 200:
+      data = res.json()
+      translated = (
+          data.get("responseData", {}).get("translatedText", "").strip()
+      )
+      if translated and translated.lower() != clean_text.lower():
+        return translated
+  except Exception:
+    pass
+
+  # 번역 서버가 모두 실패하면 영어가 그대로 화면에 노출되는 것을 막습니다.
+  return "한국어 도감 설명을 불러오는 중입니다. 잠시 후 다시 확인해 주세요."
 
 
 @st.cache_data(ttl=604800)
-def extract_single_flavor_text(species_data, pokemon_id=None, korean_name=None):
-  """한국어 공식 게임 도감 설명을 표시합니다.
-
-  #899~#905:
-    LEGENDS 아르세우스(PLA) 설명을 기본값으로 사용
-
-  #906~#1025:
-    스칼렛 설명을 기본값으로 사용
-
-  나무위키에서 버전별 설명을 찾지 못하면 PokeAPI의 한국어 설명을
-  사용합니다. 영어를 기계번역하지 않습니다.
-  """
-  if pokemon_id is not None and korean_name and 899 <= int(pokemon_id) <= 1025:
-    namu = get_namu_dex_description(pokemon_id, korean_name)
-
-    if namu and namu.get("default"):
-      return namu["default"]
-
-  # 기존 포켓몬은 PokeAPI 한국어 원문을 사용
+def extract_single_flavor_text(species_data):
+  """한국어 도감 설명을 우선 사용하고, 없으면 영어를 한국어로 번역합니다."""
   flavor_entries = species_data.get("flavor_text_entries", [])
 
+  # 1순위: PokeAPI에 저장된 한국어 원문
   for entry in flavor_entries:
     if entry.get("language", {}).get("name") == "ko":
-      value = entry.get("flavor_text", "")
-      if value:
-        return (
-            value.replace("\\n", " ")
-            .replace("\\f", " ")
+      text = entry.get("flavor_text", "")
+      if text:
+        cleaned = (
+            text.replace("\n", " ")
+            .replace("\f", " ")
             .strip()
         )
 
-  return "한국어 도감 설명이 등록되어 있지 않습니다."
+        # 혹시 language=ko인데 내용이 영어로 들어온 경우도 번역
+        if any("\uac00" <= ch <= "\ud7a3" for ch in cleaned):
+          return normalize_dex_korean_style(cleaned)
+        return normalize_dex_korean_style(translate_to_ko(cleaned))
+
+  # 2순위: 영어 원문 → 한국어 번역
+  for entry in flavor_entries:
+    if entry.get("language", {}).get("name") == "en":
+      text = entry.get("flavor_text", "")
+      if text:
+        return normalize_dex_korean_style(translate_to_ko(text))
+
+  return "도감 설명이 존재하지 않습니다."
+
+
+def normalize_dex_korean_style(text):
+  """도감 문체를 게임 도감처럼 간결한 평서체(~한다/~된다)로 통일합니다."""
+  if not text:
+    return ""
+
+  text = (
+      str(text)
+      .replace("\r\n", "\n")
+      .replace("\r", "\n")
+      .replace("\f", " ")
+      .strip()
+  )
+
+  # 번역기가 자주 만드는 존댓말/문어체를 도감식 평서체로 변환합니다.
+  replacements = [
+      ("있습니다.", "있다."),
+      ("없습니다.", "없다."),
+      ("됩니다.", "된다."),
+      ("합니다.", "한다."),
+      ("합니다", "한다"),
+      ("됩니다", "된다"),
+      ("입니다.", "이다."),
+      ("입니다", "이다"),
+      ("합니다만", "하지만"),
+      ("있으며", "있고"),
+      ("있습니다만", "있지만"),
+      ("사용합니다.", "사용한다."),
+      ("사용됩니다.", "사용된다."),
+      ("만듭니다.", "만든다."),
+      ("만들어집니다.", "만들어진다."),
+      ("보냅니다.", "보낸다."),
+      ("냅니다.", "낸다."),
+      ("줍니다.", "준다."),
+      ("얻습니다.", "얻는다."),
+      ("배웁니다.", "배운다."),
+      ("배웁니다", "배운다"),
+      ("생깁니다.", "생긴다."),
+      ("생겨납니다.", "생겨난다."),
+      ("모입니다.", "모인다."),
+      ("모읍니다.", "모은다."),
+      ("사라집니다.", "사라진다."),
+      ("변합니다.", "변한다."),
+      ("변화합니다.", "변화한다."),
+      ("움직입니다.", "움직인다."),
+      ("빛납니다.", "빛난다."),
+      ("빛납니다", "빛난다"),
+      ("뿜어냅니다.", "뿜어낸다."),
+      ("내뿜습니다.", "내뿜는다."),
+      ("가지고 있습니다.", "가지고 있다."),
+      ("지니고 있습니다.", "지니고 있다."),
+      ("알려져 있습니다.", "알려져 있다."),
+      ("여겨집니다.", "여겨진다."),
+      ("느껴집니다.", "느껴진다."),
+      ("가능합니다.", "가능하다."),
+      ("불가능합니다.", "불가능하다."),
+      ("유용합니다.", "유용하다."),
+      ("강력합니다.", "강력하다."),
+      ("특별합니다.", "특별하다."),
+      ("중요합니다.", "중요하다."),
+      ("필요합니다.", "필요하다."),
+      ("위험합니다.", "위험하다."),
+      ("귀중한 재료가 됩니다.", "귀중한 재료가 된다."),
+      ("재료로 사용됩니다.", "재료로 사용된다."),
+  ]
+
+  for old, new in replacements:
+    text = text.replace(old, new)
+
+  # "합니다/됩니다"가 활용형으로 남는 경우도 기본적인 도감 평서체로 정리합니다.
+  import re
+  text = re.sub(r"합니다(?=[.!?])", "한다", text)
+  text = re.sub(r"됩니다(?=[.!?])", "된다", text)
+  text = re.sub(r"있습니다(?=[.!?])", "있다", text)
+  text = re.sub(r"없습니다(?=[.!?])", "없다", text)
+
+  # 도감 문장은 문장별로 줄을 나눠 읽기 쉽게 합니다.
+  text = re.sub(r"(?<=[.!?])\s+(?=[가-힣A-Za-z])", "\n", text)
+  text = re.sub(r"\n{2,}", "\n", text)
+
+  return text.strip()
 
 
 @st.cache_data(ttl=86400)
@@ -1914,7 +1854,7 @@ def get_special_forms(species_data, base_ko_name, species_name):
           stats_dict[s_name] = s_val
           total_stats += s_val
 
-        main_flavor = extract_single_flavor_text(species_data, target_id, ko_name)
+        main_flavor = extract_single_flavor_text(species_data)
 
         special_forms.append({
             "type": form_type,
