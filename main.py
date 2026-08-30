@@ -25,6 +25,9 @@ if "character_search_query" not in st.session_state:
 if "selected_char_gen" not in st.session_state:
   st.session_state.selected_char_gen = None
 
+if "selected_character" not in st.session_state:
+  st.session_state.selected_character = None
+
 if "character_search_history" not in st.session_state:
   st.session_state.character_search_history = []
 
@@ -801,6 +804,7 @@ def go_to_page(page_name):
     st.session_state.selected_gen = None
   elif page_name == "인물 도감":
     st.session_state.selected_char_gen = None
+    st.session_state.selected_character = None
 
 
 # 검색어 기록 추가 함수
@@ -2293,52 +2297,63 @@ elif st.session_state.current_page == "인물 도감":
     g_name = st.session_state.selected_char_gen
     g_data = CHARACTER_GENERATIONS[g_name]
 
-    if st.button("◀ 세대 목록으로", use_container_width=False):
-      st.session_state.selected_char_gen = None
-      st.session_state.character_search_query = ""
-      st.rerun()
+    if st.session_state.selected_character:
+      # 인물 상세 페이지 (준비 중)
+      if st.button("◀ 인물 목록으로", use_container_width=False):
+        st.session_state.selected_character = None
+        st.rerun()
 
-    st.title(f"👤 {g_name} 인물 도감")
+      char_name = st.session_state.selected_character
+      st.title(f"👤 {char_name}")
+      st.info("준비 중인 페이지입니다.")
 
-    st.text_input(
-        f"{g_name} 인물 검색",
-        value=st.session_state.character_search_query,
-        key="char_user_input",
-        on_change=update_character_search,
-        placeholder=f"{g_name} 인물 이름을 입력하세요...",
-    )
-
-    query_text = str(st.session_state.character_search_query).strip()
-
-    characters = g_data["characters"]
-    if query_text:
-      characters = [
-          c for c in characters if query_text.lower() in c["name"].lower()
-      ]
-
-    characters = sorted(characters, key=character_sort_key)
-
-    if not characters:
-      st.warning(f"'{query_text}'에 해당하는 인물을 찾을 수 없습니다.")
     else:
-      for char in characters:
-        pokemon_line = (
-            ", ".join(char["pokemon"]) if char["pokemon"] else "정보 없음"
-        )
-        category = get_character_category(char)
-        st.markdown(
-            f"""
-            <div class="char-card">
-                <p style="margin: 0 0 4px 0; font-size: 0.8rem; font-weight: bold; color: #008275;">{category}</p>
-                <h3 style="margin-top: 0; color: #008275;">{char['name']} <small style="font-size: 0.9rem; color: #aaaaaa;">({char['title']})</small></h3>
-                <p><b>타입:</b> {char['type']}</p>
-                <p><b>전문 분야:</b> {char['specialty']}</p>
-                <p><b>설명:</b> {char['desc']}</p>
-                <p><b>대표 포켓몬:</b> {pokemon_line}</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+      if st.button("◀ 세대 목록으로", use_container_width=False):
+        st.session_state.selected_char_gen = None
+        st.session_state.character_search_query = ""
+        st.rerun()
+
+      st.title(f"👤 {g_name} 인물 도감")
+
+      st.text_input(
+          f"{g_name} 인물 검색",
+          value=st.session_state.character_search_query,
+          key="char_user_input",
+          on_change=update_character_search,
+          placeholder=f"{g_name} 인물 이름을 입력하세요...",
+      )
+
+      query_text = str(st.session_state.character_search_query).strip()
+
+      characters = g_data["characters"]
+      if query_text:
+        characters = [
+            c for c in characters if query_text.lower() in c["name"].lower()
+        ]
+
+      characters = sorted(characters, key=character_sort_key)
+
+      if not characters:
+        st.warning(f"'{query_text}'에 해당하는 인물을 찾을 수 없습니다.")
+      else:
+        for idx, char in enumerate(characters):
+          category = get_character_category(char)
+          st.markdown(
+              f"""
+              <div class="char-card">
+                  <p style="margin: 0 0 4px 0; font-size: 0.8rem; font-weight: bold; color: #008275;">{category}</p>
+                  <h3 style="margin-top: 0; margin-bottom: 0; color: #008275;">{char['name']} <small style="font-size: 0.9rem; color: #aaaaaa;">({char['title']})</small></h3>
+              </div>
+              """,
+              unsafe_allow_html=True,
+          )
+          if st.button(
+              f"{char['name']} 상세 보기",
+              key=f"char_detail_btn_{idx}",
+              use_container_width=True,
+          ):
+            st.session_state.selected_character = char["name"]
+            st.rerun()
 
 elif st.session_state.current_page == "맵 도감":
   st.title("🗺️ 맵 도감")
