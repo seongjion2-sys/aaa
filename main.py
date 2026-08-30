@@ -1441,109 +1441,180 @@ def render_type_table(grouped_data, is_defense=True):
 
 
 @st.cache_data(ttl=604800)
-def translate_to_ko(text):
-  """영어 도감 설명을 한국어로 변환합니다.
+@st.cache_data(ttl=604800)
+def get_namu_dex_description(pokemon_id, korean_name):
+  """나무위키의 포켓몬 문서에서 공식 게임 도감 설명을 가져옵니다.
 
-  PokeAPI의 최신 포켓몬(특히 #899~#1025)은 한국어 flavor_text가
-  없는 경우가 있습니다. 이 경우 번역 서버를 순차적으로 사용합니다.
-  번역 실패 결과를 캐시하지 않는 것이 중요합니다.
+  #899~#905(히스이)는 레전즈 아르세우스(PLA)의 도감 설명을,
+  #906~#1025(팔데아)는 9세대 스칼렛 도감 설명을 우선 사용합니다.
+
+  번역기를 사용하지 않습니다. 나무위키에 적힌 한국어 문구를
+  그대로 읽어 오는 방식입니다.
   """
-  if not text:
-    return ""
+  if not korean_name or not (899 <= int(pokemon_id) <= 1025):
+    return None
 
-  clean_text = (
-      str(text)
-      .replace("\n", " ")
-      .replace("\f", " ")
-      .strip()
-  )
-
-  # 이미 한국어라면 그대로 반환
-  korean_count = sum("\uac00" <= ch <= "\ud7a3" for ch in clean_text)
-  if korean_count >= 3:
-    return clean_text
-
-  # 1차: Google Translate 비공식 웹 엔드포인트
   try:
-    res = requests.get(
-        "https://translate.googleapis.com/translate_a/single",
-        params={
-            "client": "gtx",
-            "sl": "en",
-            "tl": "ko",
-            "dt": "t",
-            "q": clean_text,
-        },
-        headers={"User-Agent": "Mozilla/5.0"},
-        timeout=10,
-    )
-    if res.status_code == 200:
-      data = res.json()
-      translated = "".join(
-          part[0]
-          for part in data[0]
-          if isinstance(part, list) and len(part) > 0 and part[0]
-      ).strip()
+    from bs4 import BeautifulSoup
 
-      if translated and translated != clean_text:
-        return translated
-  except Exception:
-    pass
+    page_names = [
+        korean_name,
+        f"{korean_name} (포켓몬)",
+    ]
 
-  # 2차: MyMemory 무료 번역 API
-  try:
-    res = requests.get(
-        "https://api.mymemory.translated.net/get",
-        params={
-            "q": clean_text,
-            "langpair": "en|ko",
-        },
-        headers={"User-Agent": "Mozilla/5.0"},
-        timeout=10,
-    )
-    if res.status_code == 200:
-      data = res.json()
-      translated = (
-          data.get("responseData", {}).get("translatedText", "").strip()
+    html = None
+
+    for page_name in page_names:
+      url = "https://namu.moe/w/" + urllib.parse.quote(page_name, safe="")
+      res = requests.get(
+          url,
+          headers={
+              "User-Agent": (
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 Chrome/131.0 Safari/537.36"
+              )
+          },
+          timeout=10,
       )
-      if translated and translated.lower() != clean_text.lower():
-        return translated
+
+      if res.status_code == 200 and len(res.text) > 500:
+        html = res.text
+        break
+
+    if not html:
+      return None
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    # 스크립트/스타일 등 실제 문서 내용과 무관한 요소 제거
+    for tag in soup(["script", "style", "noscript", "svg"]):
+      tag.decompose()
+
+    raw_text = soup.get_text("\n", strip=True)
+
+    # HTML에서 나온 텍스트를 줄 단위로 정리
+    lines = []
+    for line in raw_text.splitlines():
+      line = " ".join(line.split()).strip()
+      if line:
+        lines.append(line)
+
+    if not lines:
+      return None
+
+    # "도감 설명" 문단 이후의 내용만 대상으로 합니다.
+    try:
+      dex_index = next(
+          i for i, line in enumerate(lines)
+          if line == "도감 설명" or line.startswith("도감 설명")
+      )
+    except StopIteration:
+      return None
+
+    section = lines[dex_index + 1:]
+
+    # 너무 뒤의 진화/기술/출현장소 등은 도감 설명과 무관하므로 잘라냅니다.
+    stop_words = {
+        "진화 단계",
+        "배우는 기술",
+        "기술머신",
+        "출현장소",
+        "지니고 있는 도구",
+        "게임별 도트 그림",
+        "포켓몬 카드 게임",
+        "애니메이션에서의 등장",
+        "만화책에서의 등장",
+    }
+
+    cut = len(section)
+    for i, line in enumerate(section):
+      if line in stop_words:
+        cut = i
+        break
+
+    section = section[:cut]
+
+    def next_nonempty(seq, index):
+      for k in range(index + 1, len(seq)):
+        value = seq[k].strip()
+        if value:
+          return value
+      return None
+
+    # 8세대 히스이 도감(#899~#905):
+    # "PLA" 바로 다음에 나오는 한국어 문장을 사용합니다.
+    if 899 <= int(pokemon_id) <= 905:
+      for i, line in enumerate(section):
+        if line in {"PLA", "레전즈 아르세우스"}:
+          value = next_nonempty(section, i)
+          if value:
+            return value
+
+    # 9세대 팔데아 도감(#906~#1025):
+    # "9세대 → 스칼렛" 다음에 나오는 한국어 설명을 사용합니다.
+    gen9_index = None
+    for i, line in enumerate(section):
+      if line == "9세대":
+        gen9_index = i
+        break
+
+    if gen9_index is not None:
+      for i in range(gen9_index + 1, len(section)):
+        if section[i] == "스칼렛":
+          value = next_nonempty(section, i)
+          if value and value not in {"바이올렛", "레전즈 Z-A"}:
+            return value
+
+      # 혹시 표의 텍스트 순서가 달라진 경우 바이올렛도 fallback
+      for i in range(gen9_index + 1, len(section)):
+        if section[i] == "바이올렛":
+          value = next_nonempty(section, i)
+          if value and value not in {"스칼렛", "레전즈 Z-A"}:
+            return value
+
+    # 일부 나무위키 문서가 세대 표를 다른 방식으로 표시하는 경우를 위한
+    # 마지막 fallback: "PLA" 또는 "스칼렛/바이올렛" 뒤의 한국어 문장 탐색
+    for i, line in enumerate(section):
+      if line in {"PLA", "스칼렛", "바이올렛"}:
+        value = next_nonempty(section, i)
+        if value and any("\uac00" <= ch <= "\ud7a3" for ch in value):
+          return value
+
   except Exception:
     pass
 
-  # 번역 서버가 모두 실패하면 영어가 그대로 화면에 노출되는 것을 막습니다.
-  return "한국어 도감 설명을 불러오는 중입니다. 잠시 후 다시 확인해 주세요."
+  return None
 
 
 @st.cache_data(ttl=604800)
-def extract_single_flavor_text(species_data):
-  """한국어 도감 설명을 우선 사용하고, 없으면 영어를 한국어로 번역합니다."""
+def extract_single_flavor_text(species_data, pokemon_id=None, korean_name=None):
+  """도감 설명을 가져옵니다.
+
+  #899~#1025는 나무위키의 한국어 공식 게임 도감 설명을 최우선으로
+  사용합니다. 따라서 영어 → 한국어 기계번역을 하지 않습니다.
+  """
+  # 최신 포켓몬은 나무위키 원문을 최우선으로 사용
+  if pokemon_id is not None and korean_name and 899 <= int(pokemon_id) <= 1025:
+    namu_text = get_namu_dex_description(pokemon_id, korean_name)
+    if namu_text:
+      return namu_text
+
+  # 기존 포켓몬은 PokeAPI의 한국어 공식 데이터를 사용
   flavor_entries = species_data.get("flavor_text_entries", [])
 
-  # 1순위: PokeAPI에 저장된 한국어 원문
   for entry in flavor_entries:
     if entry.get("language", {}).get("name") == "ko":
       text = entry.get("flavor_text", "")
       if text:
-        cleaned = (
-            text.replace("\n", " ")
-            .replace("\f", " ")
+        return (
+            text.replace("\\n", " ")
+            .replace("\\f", " ")
             .strip()
         )
 
-        # 혹시 language=ko인데 내용이 영어로 들어온 경우도 번역
-        if any("\uac00" <= ch <= "\ud7a3" for ch in cleaned):
-          return cleaned
-        return translate_to_ko(cleaned)
-
-  # 2순위: 영어 원문 → 한국어 번역
-  for entry in flavor_entries:
-    if entry.get("language", {}).get("name") == "en":
-      text = entry.get("flavor_text", "")
-      if text:
-        return translate_to_ko(text)
-
-  return "도감 설명이 존재하지 않습니다."
+  # 번역기로 영어를 번역하지 않습니다.
+  # 한국어 데이터가 없는 경우 영어 원문 대신 안내 문구를 표시합니다.
+  return "한국어 도감 설명이 등록되어 있지 않습니다."
 
 
 @st.cache_data(ttl=86400)
@@ -1772,7 +1843,7 @@ def get_special_forms(species_data, base_ko_name, species_name):
           stats_dict[s_name] = s_val
           total_stats += s_val
 
-        main_flavor = extract_single_flavor_text(species_data)
+        main_flavor = extract_single_flavor_text(species_data, target_id, ko_name)
 
         special_forms.append({
             "type": form_type,
