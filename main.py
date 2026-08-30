@@ -1442,59 +1442,108 @@ def render_type_table(grouped_data, is_defense=True):
 
 @st.cache_data(ttl=604800)
 def translate_to_ko(text):
-  """영문 도감 설명을 한국어로 변환합니다.
+  """영어 도감 설명을 한국어로 변환합니다.
 
-  9세대 및 일부 최신 포켓몬은 PokeAPI의 flavor_text_entries에
-  한국어 번역이 아직 없는 경우가 있습니다. 이때 영어 설명을
-  Google 번역 엔드포인트로 한국어로 변환해 표시합니다.
+  PokeAPI의 최신 포켓몬(특히 #899~#1025)은 한국어 flavor_text가
+  없는 경우가 있습니다. 이 경우 번역 서버를 순차적으로 사용합니다.
+  번역 실패 결과를 캐시하지 않는 것이 중요합니다.
   """
   if not text:
     return ""
 
-  # 이미 한글이 충분히 포함되어 있으면 번역하지 않습니다.
-  korean_count = sum(
-      1 for ch in text
-      if "\uac00" <= ch <= "\ud7a3"
+  clean_text = (
+      str(text)
+      .replace("\n", " ")
+      .replace("\f", " ")
+      .strip()
   )
+
+  # 이미 한국어라면 그대로 반환
+  korean_count = sum("\uac00" <= ch <= "\ud7a3" for ch in clean_text)
   if korean_count >= 3:
-    return text
+    return clean_text
 
-  clean_text = text.replace("\n", " ").replace("\f", " ").strip()
+  # 1차: Google Translate 비공식 웹 엔드포인트
+  try:
+    res = requests.get(
+        "https://translate.googleapis.com/translate_a/single",
+        params={
+            "client": "gtx",
+            "sl": "en",
+            "tl": "ko",
+            "dt": "t",
+            "q": clean_text,
+        },
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=10,
+    )
+    if res.status_code == 200:
+      data = res.json()
+      translated = "".join(
+          part[0]
+          for part in data[0]
+          if isinstance(part, list) and len(part) > 0 and part[0]
+      ).strip()
 
-  endpoints = [
-      "https://translate.googleapis.com/translate_a/single",
-      "https://translate.google.com/translate_a/single",
-  ]
+      if translated and translated != clean_text:
+        return translated
+  except Exception:
+    pass
 
-  for endpoint in endpoints:
-    try:
-      params = {
-          "client": "gtx",
-          "sl": "en",
-          "tl": "ko",
-          "dt": "t",
-          "q": clean_text,
-      }
-      res = requests.get(
-          endpoint,
-          params=params,
-          headers={"User-Agent": "Mozilla/5.0"},
-          timeout=8,
+  # 2차: MyMemory 무료 번역 API
+  try:
+    res = requests.get(
+        "https://api.mymemory.translated.net/get",
+        params={
+            "q": clean_text,
+            "langpair": "en|ko",
+        },
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=10,
+    )
+    if res.status_code == 200:
+      data = res.json()
+      translated = (
+          data.get("responseData", {}).get("translatedText", "").strip()
       )
-      if res.status_code == 200:
-        data = res.json()
-        translated = "".join(
-            item[0] for item in data[0]
-            if isinstance(item, list) and item and item[0]
-        ).strip()
+      if translated and translated.lower() != clean_text.lower():
+        return translated
+  except Exception:
+    pass
 
-        if translated:
-          return translated
-    except Exception:
-      continue
+  # 번역 서버가 모두 실패하면 영어가 그대로 화면에 노출되는 것을 막습니다.
+  return "한국어 도감 설명을 불러오는 중입니다. 잠시 후 다시 확인해 주세요."
 
-  # 번역 서버가 일시적으로 실패해도 프로그램 자체는 정상 동작하도록 합니다.
-  return clean_text
+
+@st.cache_data(ttl=604800)
+def extract_single_flavor_text(species_data):
+  """한국어 도감 설명을 우선 사용하고, 없으면 영어를 한국어로 번역합니다."""
+  flavor_entries = species_data.get("flavor_text_entries", [])
+
+  # 1순위: PokeAPI에 저장된 한국어 원문
+  for entry in flavor_entries:
+    if entry.get("language", {}).get("name") == "ko":
+      text = entry.get("flavor_text", "")
+      if text:
+        cleaned = (
+            text.replace("\n", " ")
+            .replace("\f", " ")
+            .strip()
+        )
+
+        # 혹시 language=ko인데 내용이 영어로 들어온 경우도 번역
+        if any("\uac00" <= ch <= "\ud7a3" for ch in cleaned):
+          return cleaned
+        return translate_to_ko(cleaned)
+
+  # 2순위: 영어 원문 → 한국어 번역
+  for entry in flavor_entries:
+    if entry.get("language", {}).get("name") == "en":
+      text = entry.get("flavor_text", "")
+      if text:
+        return translate_to_ko(text)
+
+  return "도감 설명이 존재하지 않습니다."
 
 
 @st.cache_data(ttl=86400)
@@ -1629,33 +1678,6 @@ def generate_hexagon_svg(stats):
 
 
 @st.cache_data(ttl=604800)
-def extract_single_flavor_text(species_data):
-  """가장 적절한 한국어 도감 설명을 반환합니다.
-
-  1. PokeAPI에 한국어 설명이 있으면 그대로 사용
-  2. 한국어가 없으면 영어 설명을 한국어로 자동 번역
-  3. 899번 이후의 히스이/팔데아 포켓몬도 동일하게 처리
-  """
-  flavor_entries = species_data.get("flavor_text_entries", [])
-
-  # 한국어 원문을 최우선으로 사용
-  for entry in flavor_entries:
-    if entry.get("language", {}).get("name") == "ko":
-      text = entry.get("flavor_text", "")
-      if text:
-        return text.replace("\n", " ").replace("\f", " ").strip()
-
-  # 한국어가 없는 경우 영어 원문을 한국어로 변환
-  for entry in flavor_entries:
-    if entry.get("language", {}).get("name") == "en":
-      text = entry.get("flavor_text", "")
-      if text:
-        text = text.replace("\n", " ").replace("\f", " ").strip()
-        return translate_to_ko(text)
-
-  return "도감 설명이 존재하지 않습니다."
-
-
 @st.cache_data(ttl=86400)
 def get_special_forms(species_data, base_ko_name, species_name):
   special_forms = []
@@ -1815,6 +1837,9 @@ def search_national_pokemon_id(query_name, max_id=1025):
   return None
 
 
+# #899~#905는 8세대(히스이), #906~#1025는 9세대(팔데아)입니다.
+# 두 범위 모두 PokeAPI에 한국어 도감 설명이 없는 포켓몬이 있을 수 있으므로
+# extract_single_flavor_text()에서 자동 한국어 번역을 적용합니다.
 @st.cache_data(ttl=604800)
 def get_pokemon_data(target_id):
   if not target_id:
@@ -1822,14 +1847,14 @@ def get_pokemon_data(target_id):
 
   try:
     pokemon_res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon/{target_id}", timeout=2
+        f"https://pokeapi.co/api/v2/pokemon/{target_id}", timeout=8
     )
     if pokemon_res.status_code != 200:
       return None
     pokemon_data = pokemon_res.json()
 
     species_res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon-species/{target_id}", timeout=2
+        f"https://pokeapi.co/api/v2/pokemon-species/{target_id}", timeout=8
     )
     species_data = species_res.json()
 
