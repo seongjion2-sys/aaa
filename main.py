@@ -1337,18 +1337,19 @@ def translate_to_ko(text):
 
 @st.cache_data(ttl=86400)
 def get_pokemon_name_by_id(pokemon_id):
-  try:
-    res = requests.get(
-        f"https://pokeapi.co/api/v2/pokemon-species/{pokemon_id}", timeout=2
-    )
-    if res.status_code == 200:
-      data = res.json()
-      return next(
-          (n["name"] for n in data["names"] if n["language"]["name"] == "ko"),
-          f"No.{pokemon_id}",
+  for _ in range(2):
+    try:
+      res = requests.get(
+          f"https://pokeapi.co/api/v2/pokemon-species/{pokemon_id}", timeout=6
       )
-  except Exception:
-    pass
+      if res.status_code == 200:
+        data = res.json()
+        return next(
+            (n["name"] for n in data["names"] if n["language"]["name"] == "ko"),
+            f"No.{pokemon_id}",
+        )
+    except Exception:
+      pass
   return f"No.{pokemon_id}"
 
 
@@ -1806,10 +1807,10 @@ def get_character_avatar_url(char_name, bg_color):
 
 
 @st.cache_data(ttl=86400)
-def resolve_character_pokemon(query_name, start_id, end_id):
-  """세대 ID 범위 내에서 한글 이름과 일치하는 포켓몬을 찾아
-  {"id": 전국도감 번호, "image": 공식 아트워크 URL} 을 반환합니다.
-  찾지 못하면 None을 반환합니다."""
+def find_pokemon_id_by_korean_name(query_name, start_id, end_id):
+  """세대 ID 범위 내에서 한글 이름과 정확히 일치하는 포켓몬의
+  전국도감 번호를 찾습니다. 이름-번호 매칭은 시간이 지나도 바뀌지 않으므로
+  길게 캐싱해도 안전합니다."""
   query_name = (query_name or "").strip()
   if not query_name:
     return None
@@ -1826,21 +1827,43 @@ def resolve_character_pokemon(query_name, start_id, end_id):
     for p_id in range(start_id, end_id + 1):
       ko_name = get_pokemon_name_by_id(p_id)
       if ko_name == name:
-        try:
-          p_res = requests.get(
-              f"https://pokeapi.co/api/v2/pokemon/{p_id}", timeout=2
-          )
-          if p_res.status_code == 200:
-            p_data = p_res.json()
-            img_url = (
-                p_data["sprites"]["other"]["official-artwork"]["front_default"]
-                or p_data["sprites"]["front_default"]
-                or ""
-            )
-            return {"id": p_id, "image": img_url}
-        except Exception:
-          pass
+        return p_id
   return None
+
+
+@st.cache_data(ttl=600)
+def fetch_pokemon_artwork_url(pokemon_id):
+  """포켓몬 번호로 공식 아트워크 URL을 가져옵니다.
+  네트워크 순간 오류로 실패한 결과가 하루 종일 캐싱되지 않도록
+  실패 결과는 10분만 캐싱하고(재시도 유도), 최대 2번까지 재시도합니다."""
+  if not pokemon_id:
+    return ""
+  for _ in range(2):
+    try:
+      p_res = requests.get(
+          f"https://pokeapi.co/api/v2/pokemon/{pokemon_id}", timeout=6
+      )
+      if p_res.status_code == 200:
+        p_data = p_res.json()
+        img_url = (
+            p_data["sprites"]["other"]["official-artwork"]["front_default"]
+            or p_data["sprites"]["front_default"]
+            or ""
+        )
+        if img_url:
+          return img_url
+    except Exception:
+      pass
+  return ""
+
+
+def resolve_character_pokemon(query_name, start_id, end_id):
+  """{"id": 전국도감 번호, "image": 공식 아트워크 URL} 을 반환합니다.
+  찾지 못하면 None을 반환합니다."""
+  pokemon_id = find_pokemon_id_by_korean_name(query_name, start_id, end_id)
+  if not pokemon_id:
+    return None
+  return {"id": pokemon_id, "image": fetch_pokemon_artwork_url(pokemon_id)}
 
 
 # 사이드바 네비게이션
