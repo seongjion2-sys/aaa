@@ -3061,6 +3061,27 @@ def get_item_image_url(en_name):
   )
 
 
+@st.cache_data(ttl=86400)
+def resolve_item_image_url(en_name):
+  """실제로 이미지가 존재하는 URL만 돌려줍니다.
+
+  PokeAPI 스프라이트 저장소는 커뮤니티가 채워 넣는 방식이라, 최근에
+  추가된 종족별 사탕·성격 민트·일부 스토리 아이템 등은 아직 아이콘이
+  등록되지 않은 경우가 많습니다. 이런 경우 깨진 이미지 아이콘 대신
+  빈 문자열을 돌려주어 화면에서 대체 표시를 쓸 수 있게 합니다.
+  """
+  url = get_item_image_url(en_name)
+  if not url:
+    return ""
+  try:
+    resp = requests.head(url, timeout=3, allow_redirects=True)
+    if resp.status_code == 200:
+      return url
+  except Exception:
+    pass
+  return ""
+
+
 def find_item_by_name(item_name):
   for cat_name, cat_data in ITEM_CATEGORIES.items():
     for it in cat_data["items"]:
@@ -3983,11 +4004,23 @@ elif st.session_state.current_page == "아이템 도감":
 
       col_left, col_right = st.columns([1, 2])
       with col_left:
-        img_url = get_item_image_url(item["en"])
+        img_url = resolve_item_image_url(item["en"])
+        if img_url:
+          img_html = (
+              f'<img src="{img_url}" style="width:96px; height:96px; '
+              'object-fit:contain; image-rendering:pixelated;">'
+          )
+        else:
+          img_html = (
+              '<div style="width:96px; height:96px; margin:0 auto; '
+              'display:flex; align-items:center; justify-content:center; '
+              f'font-size:40px;">{cat_data.get("icon", "🎒")}</div>'
+              '<span style="font-size:0.8rem; color:#999;">이미지 없음</span>'
+          )
         st.markdown(
             f"""
-            <div class="infobox">
-                <img src="{img_url}" style="width:96px; height:96px; object-fit:contain; image-rendering:pixelated;">
+            <div class="infobox" style="text-align:center;">
+                {img_html}
             </div>
             """,
             unsafe_allow_html=True,
@@ -4051,11 +4084,23 @@ elif st.session_state.current_page == "아이템 도감":
       cols = st.columns(n_cols)
       for idx, (c_name, c_data, it) in enumerate(all_items):
         with cols[idx % n_cols]:
-          img_url = get_item_image_url(it["en"])
+          img_url = resolve_item_image_url(it["en"])
+          if img_url:
+            img_html = (
+                f'<img src="{img_url}" style="width:64px; height:64px; '
+                'object-fit:contain; image-rendering:pixelated;">'
+            )
+          else:
+            img_html = (
+                '<div style="width:64px; height:64px; margin:0 auto; '
+                'display:flex; align-items:center; justify-content:center; '
+                f'font-size:28px;">{c_data.get("icon", "🎒")}</div>'
+                '<span style="font-size:0.7rem; color:#999;">이미지 없음</span>'
+            )
           st.markdown(
               f"""
               <div class="char-card" style="text-align:center;">
-                  <img src="{img_url}" style="width:64px; height:64px; object-fit:contain; image-rendering:pixelated;"><br>
+                  {img_html}<br>
                   <b>{it['name']}</b><br>
                   <span class='type-chip' style='background-color:{c_data["color"]}; font-size:0.7rem;'>{c_name}</span>
                   <p style="font-size:0.8rem; color:#999; margin-top:6px;">{it['summary']}</p>
