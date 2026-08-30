@@ -57,6 +57,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "바위 타입 포켓몬 전문",
                 "desc": "단단한 정신력과 바위처럼 묵직한 전투를 구사하는 관동지방 최초의 체육관 관장입니다.",
                 "pokemon": ["꼬마돌", "롱스톤"],
+                "image": "",
             },
             {
                 "name": "이슬",
@@ -65,6 +66,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "물 타입 포켓몬 전문",
                 "desc": "물 속의 요정이라 불리며, 활기차고 당찬 성격의 체육관 관장입니다.",
                 "pokemon": ["별가람", "아쿠스타"],
+                "image": "",
             },
             {
                 "name": "마티스",
@@ -73,6 +75,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "전기 타입 포켓몬 전문",
                 "desc": "군인 출신으로 스피디한 전기 포켓몬 배틀을 구사하는 관장입니다.",
                 "pokemon": ["코일", "라이츄"],
+                "image": "",
             },
             {
                 "name": "민화",
@@ -81,6 +84,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "풀 타입 포켓몬 전문",
                 "desc": "무지개시티에서 정원을 가꾸며 풀 포켓몬을 다루는 관장입니다.",
                 "pokemon": ["라플레시아", "우츠보트"],
+                "image": "",
             },
             {
                 "name": "독수",
@@ -89,6 +93,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "독 타입 포켓몬 전문",
                 "desc": "닌자처럼 은밀하게 움직이는 독 타입 전문 체육관 관장입니다.",
                 "pokemon": ["또도가스", "냄새꼬"],
+                "image": "",
             },
             {
                 "name": "초련",
@@ -97,6 +102,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "에스퍼 타입 포켓몬 전문",
                 "desc": "초능력을 지닌 신비로운 소녀로, 에스퍼 포켓몬을 다루는 관장입니다.",
                 "pokemon": ["후딘", "슬리프"],
+                "image": "",
             },
             {
                 "name": "강연",
@@ -105,6 +111,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "불꽃 타입 포켓몬 전문",
                 "desc": "은퇴한 과학자 출신으로, 홍련섬에서 불꽃 포켓몬을 연구하는 관장입니다.",
                 "pokemon": ["윈디", "가디"],
+                "image": "",
             },
             {
                 "name": "비주기",
@@ -113,6 +120,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "땅 타입 포켓몬 및 조직 지휘",
                 "desc": "관동지방의 마지막 체육관 관장이자, 정체를 숨긴 악의 조직 로켓단의 보스입니다.",
                 "pokemon": ["니드킹", "페르시온"],
+                "image": "",
             },
             {
                 "name": "그린",
@@ -121,6 +129,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "올라운더",
                 "desc": "라이벌이자 관동지방 최초의 챔피언으로, 이후 상록체육관 관장으로 부임합니다.",
                 "pokemon": ["리자몽", "피죤투"],
+                "image": "",
             },
             {
                 "name": "레드",
@@ -129,6 +138,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "올라운더",
                 "desc": "태초마을 출신으로, 관동 지방을 모험하며 포켓몬 리그를 제패한 전설적인 트레이너입니다.",
                 "pokemon": ["피카츄", "리자몽", "잠만보"],
+                "image": "",
             },
             {
                 "name": "오박사",
@@ -137,6 +147,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "포켓몬 연구",
                 "desc": "태초마을에 연구소를 두고 신규 트레이너에게 첫 포켓몬을 나눠주는 저명한 박사입니다.",
                 "pokemon": [],
+                "image": "",
             },
         ],
     },
@@ -150,6 +161,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "비행 타입 포켓몬 전문",
                 "desc": "하늘을 나는 포켓몬을 사랑하는 우아한 성도지방 첫 체육관 관장입니다.",
                 "pokemon": ["구구", "피죤투"],
+                "image": "",
             },
             {
                 "name": "호일",
@@ -158,6 +170,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "벌레 타입 포켓몬 전문",
                 "desc": "벌레 포켓몬 연구에 열정적인 소년 관장입니다.",
                 "pokemon": ["단데기", "스라크"],
+                "image": "",
             },
             {
                 "name": "꼭두",
@@ -166,6 +179,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "노말 타입 포켓몬 전문",
                 "desc": "트레이너 경력이 짧지만 밀탱크로 많은 도전자를 울린 관장입니다.",
                 "pokemon": ["밀탱크"],
+                "image": "",
             },
             {
                 "name": "유빈",
@@ -174,6 +188,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "고스트 타입 포켓몬 전문",
                 "desc": "포켓몬탑이 있는 인주시티에서 유령 포켓몬을 다루는 관장입니다.",
                 "pokemon": ["팬텀"],
+                "image": "",
             },
             {
                 "name": "사도",
@@ -182,6 +197,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "격투 타입 포켓몬 전문",
                 "desc": "호쾌한 성격으로 격투 포켓몬을 단련시키는 관장입니다.",
                 "pokemon": ["알통몬", "괴력몬"],
+                "image": "",
             },
             {
                 "name": "규리",
@@ -190,6 +206,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "강철 타입 포켓몬 전문",
                 "desc": "성실한 성격으로 강철 포켓몬을 정성껏 키우는 관장입니다.",
                 "pokemon": ["강철톤"],
+                "image": "",
             },
             {
                 "name": "류옹",
@@ -198,6 +215,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "얼음 타입 포켓몬 전문",
                 "desc": "인생 경험이 풍부한 노년의 얼음 타입 전문 관장입니다.",
                 "pokemon": ["쥬쥬", "얼음귀신"],
+                "image": "",
             },
             {
                 "name": "이향",
@@ -206,6 +224,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "드래곤 타입 포켓몬 전문",
                 "desc": "자존심이 매우 강하며, 성도지방의 마지막 체육관 관장입니다.",
                 "pokemon": ["망나뇽"],
+                "image": "",
             },
             {
                 "name": "목호",
@@ -214,6 +233,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "드래곤 타입 포켓몬 전문",
                 "desc": "관동지방 사천왕 출신으로, 성도지방의 챔피언으로 등극한 강자입니다.",
                 "pokemon": ["망나뇽"],
+                "image": "",
             },
         ],
     },
@@ -227,6 +247,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "바위 타입 포켓몬 전문",
                 "desc": "바위와 지질학에 조예가 깊은 우수한 학생 관장입니다.",
                 "pokemon": ["코산호"],
+                "image": "",
             },
             {
                 "name": "철구",
@@ -235,6 +256,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "격투 타입 포켓몬 전문",
                 "desc": "서핑과 격투기를 즐기는 시원시원한 성격의 관장입니다.",
                 "pokemon": ["마크탕"],
+                "image": "",
             },
             {
                 "name": "암페어",
@@ -243,6 +265,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "전기 타입 포켓몬 전문",
                 "desc": "발명을 좋아하는 유쾌한 성격의 전기 타입 전문 관장입니다.",
                 "pokemon": ["마그네톤"],
+                "image": "",
             },
             {
                 "name": "민지",
@@ -251,6 +274,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "불꽃 타입 포켓몬 전문",
                 "desc": "용암시티의 뜨거운 환경 속에서 열정적으로 관장을 맡고 있습니다.",
                 "pokemon": ["윤딜라"],
+                "image": "",
             },
             {
                 "name": "종길",
@@ -259,6 +283,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "노말 타입 포켓몬 전문",
                 "desc": "주인공의 아버지이자, 잠만보를 앞세운 노말 타입 전문 관장입니다.",
                 "pokemon": ["잠만보"],
+                "image": "",
             },
             {
                 "name": "은송",
@@ -267,6 +292,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "비행 타입 포켓몬 전문",
                 "desc": "우아한 태도로 비행 포켓몬을 다루는 검방울시티의 관장입니다.",
                 "pokemon": ["보만다"],
+                "image": "",
             },
             {
                 "name": "풍&란",
@@ -275,6 +301,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "에스퍼 타입 포켓몬 전문",
                 "desc": "쌍둥이 남매가 함께 맡고 있는 이끼시티의 에스퍼 타입 체육관 관장입니다.",
                 "pokemon": ["솔록", "루나톤"],
+                "image": "",
             },
             {
                 "name": "윤진",
@@ -283,6 +310,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "물 타입 포켓몬 전문",
                 "desc": "호연지방의 마지막 관장으로, 이후 호연리그 챔피언 자리에까지 오른 실력자입니다.",
                 "pokemon": ["마일리시"],
+                "image": "",
             },
         ],
     },
@@ -296,6 +324,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "바위 타입 포켓몬 전문",
                 "desc": "탄광업이 발달한 무쇠시티를 이끄는 든든한 관장입니다.",
                 "pokemon": ["꼬마돌", "두개도스"],
+                "image": "",
             },
             {
                 "name": "유채",
@@ -304,6 +333,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "풀 타입 포켓몬 전문",
                 "desc": "풀 포켓몬과 대자연을 사랑하는 밝은 성격의 관장입니다.",
                 "pokemon": ["체리버", "로즈레이드"],
+                "image": "",
             },
             {
                 "name": "자두",
@@ -312,6 +342,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "격투 타입 포켓몬 전문",
                 "desc": "도장에서 수련하는 어린 나이의 격투 타입 전문 관장입니다.",
                 "pokemon": ["루카리오"],
+                "image": "",
             },
             {
                 "name": "맥실러",
@@ -320,6 +351,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "물 타입 포켓몬 전문",
                 "desc": "선원 출신의 호탕한 성격으로 물 포켓몬을 다루는 관장입니다.",
                 "pokemon": ["라이보르트"],
+                "image": "",
             },
             {
                 "name": "멜리사",
@@ -328,6 +360,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "고스트 타입 포켓몬 전문",
                 "desc": "이국적인 춤과 함께 고스트 포켓몬을 다루는 신비로운 관장입니다.",
                 "pokemon": ["미라마사"],
+                "image": "",
             },
             {
                 "name": "동관",
@@ -336,6 +369,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "강철 타입 포켓몬 전문",
                 "desc": "화석 연구가로도 활동하는 강철 타입 전문 관장입니다.",
                 "pokemon": ["금강펜치"],
+                "image": "",
             },
             {
                 "name": "무청",
@@ -344,6 +378,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "얼음 타입 포켓몬 전문",
                 "desc": "설산 마을 선단시티에서 얼음 포켓몬을 다루는 관장입니다.",
                 "pokemon": ["메쨩"],
+                "image": "",
             },
             {
                 "name": "전진",
@@ -352,6 +387,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "전기 타입 포켓몬 전문",
                 "desc": "신오지방의 마지막 관장으로, 전기 포켓몬을 이용한 강렬한 배틀이 특징입니다.",
                 "pokemon": ["전룡"],
+                "image": "",
             },
             {
                 "name": "시로나",
@@ -360,6 +396,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "올라운더",
                 "desc": "포켓몬 신화를 연구하는 학자이자, 다양한 타입을 능숙하게 다루는 신오리그 챔피언입니다.",
                 "pokemon": ["가디안", "밀로틱"],
+                "image": "",
             },
         ],
     },
@@ -373,6 +410,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "풀 타입 포켓몬 전문",
                 "desc": "소믈리에 능력을 지닌 삼형제 관장 중 첫째입니다.",
                 "pokemon": ["야나프"],
+                "image": "",
             },
             {
                 "name": "팟",
@@ -381,6 +419,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "불꽃 타입 포켓몬 전문",
                 "desc": "레스토랑을 함께 운영하는 삼형제 관장 중 둘째입니다.",
                 "pokemon": ["바오프"],
+                "image": "",
             },
             {
                 "name": "콘",
@@ -389,6 +428,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "물 타입 포켓몬 전문",
                 "desc": "레스토랑을 함께 운영하는 삼형제 관장 중 막내입니다.",
                 "pokemon": ["파오리"],
+                "image": "",
             },
             {
                 "name": "알로에",
@@ -397,6 +437,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "노말 타입 포켓몬 전문",
                 "desc": "박물관 관장도 겸임하는 노말 타입 전문 체육관 관장입니다.",
                 "pokemon": ["켄호로우"],
+                "image": "",
             },
             {
                 "name": "아티",
@@ -405,6 +446,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "벌레 타입 포켓몬 전문",
                 "desc": "예술가로도 활동하는 개성 넘치는 벌레 타입 전문 관장입니다.",
                 "pokemon": ["아이앤트"],
+                "image": "",
             },
             {
                 "name": "카밀레",
@@ -413,6 +455,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "전기 타입 포켓몬 전문",
                 "desc": "모델로도 활동하는 화려한 전기 타입 전문 관장입니다.",
                 "pokemon": ["제브라이카"],
+                "image": "",
             },
             {
                 "name": "야콘",
@@ -421,6 +464,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "땅 타입 포켓몬 전문",
                 "desc": "광산 회사를 운영하는 사장이기도 한 땅 타입 전문 관장입니다.",
                 "pokemon": ["동미러"],
+                "image": "",
             },
             {
                 "name": "풍란",
@@ -429,6 +473,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "비행 타입 포켓몬 전문",
                 "desc": "비행기 조종사이기도 한 활발한 비행 타입 전문 관장입니다.",
                 "pokemon": ["스완나"],
+                "image": "",
             },
             {
                 "name": "담죽",
@@ -437,6 +482,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "얼음 타입 포켓몬 전문",
                 "desc": "영화배우 활동 경력도 있는 얼음 타입 전문 관장입니다.",
                 "pokemon": ["망키라"],
+                "image": "",
             },
             {
                 "name": "아이리스",
@@ -445,6 +491,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "드래곤 타입 포켓몬 전문",
                 "desc": "하나지방 마지막 관장으로 등장한 뒤, 후속작에서 챔피언으로 승격한 인물입니다.",
                 "pokemon": ["감규옹"],
+                "image": "",
             },
             {
                 "name": "아델",
@@ -453,6 +500,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "올라운더",
                 "desc": "자유로운 방랑자 같은 인상으로, 다양한 타입을 다루는 하나리그 챔피언입니다.",
                 "pokemon": ["볼트로스"],
+                "image": "",
             },
         ],
     },
@@ -466,6 +514,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "벌레 타입 포켓몬 전문",
                 "desc": "사진작가로도 활동하는 칼로스지방 첫 체육관 관장입니다.",
                 "pokemon": ["비파리"],
+                "image": "",
             },
             {
                 "name": "자크로",
@@ -474,6 +523,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "바위 타입 포켓몬 전문",
                 "desc": "암벽 등반가이기도 한 바위 타입 전문 체육관 관장입니다.",
                 "pokemon": ["초투불", "암트르"],
+                "image": "",
             },
             {
                 "name": "코르니",
@@ -482,6 +532,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "격투 타입 포켓몬 및 메가진화",
                 "desc": "메가진화의 계승자로, 루카리오와 함께 싸우는 격투 타입 관장입니다.",
                 "pokemon": ["루카리오"],
+                "image": "",
             },
             {
                 "name": "후쿠지",
@@ -490,6 +541,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "풀 타입 포켓몬 전문",
                 "desc": "정원사이자 인생 경험이 풍부한 노년의 풀 타입 전문 관장입니다.",
                 "pokemon": ["트로피우스"],
+                "image": "",
             },
             {
                 "name": "시트론",
@@ -498,6 +550,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "전기 타입 포켓몬 및 발명품",
                 "desc": "과학 발명을 사랑하는 천재 소년 관장입니다.",
                 "pokemon": ["레코디", "일레도리자드"],
+                "image": "",
             },
             {
                 "name": "마슈",
@@ -506,6 +559,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "페어리 타입 포켓몬 전문",
                 "desc": "기모노를 만드는 장인이자, 칼로스지방 최초의 페어리 타입 전문 관장입니다.",
                 "pokemon": ["누리레느"],
+                "image": "",
             },
             {
                 "name": "고지카",
@@ -514,6 +568,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "에스퍼 타입 포켓몬 전문",
                 "desc": "천체 점술사이기도 한 신비로운 에스퍼 타입 전문 관장입니다.",
                 "pokemon": ["염뮤"],
+                "image": "",
             },
             {
                 "name": "우르프",
@@ -522,6 +577,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "얼음 타입 포켓몬 전문",
                 "desc": "눈보라가 몰아치는 이설시티를 지키는 마지막 체육관 관장입니다.",
                 "pokemon": ["앱솔"],
+                "image": "",
             },
             {
                 "name": "카르네",
@@ -530,6 +586,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "올라운더 / 배우",
                 "desc": "유명 배우로도 활동하는 칼로스지방의 챔피언입니다.",
                 "pokemon": ["가디안"],
+                "image": "",
             },
         ],
     },
@@ -543,6 +600,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "격투 타입 포켓몬 전문",
                 "desc": "알로라지방 체육관 문화를 대신하는 섬 순례 제도에서, 첫 섬을 지키는 격투 타입 섬의 왕입니다.",
                 "pokemon": ["코코리스트"],
+                "image": "",
             },
             {
                 "name": "릴리",
@@ -551,6 +609,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "서포터",
                 "desc": "포켓몬을 무서워했으나 주인공과 만나며 용기를 얻고 성장하는 소녀입니다.",
                 "pokemon": ["코스모스"],
+                "image": "",
             },
         ],
     },
@@ -564,6 +623,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "풀 타입 포켓몬 전문",
                 "desc": "가라르지방의 첫 체육관 관장으로, 목장에서 풀 포켓몬을 기릅니다.",
                 "pokemon": ["에어무드"],
+                "image": "",
             },
             {
                 "name": "야청",
@@ -572,6 +632,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "물 타입 포켓몬 전문",
                 "desc": "평소에는 차분하지만 배틀 시에는 승부욕이 불타오르는 패션 모델 겸 관장입니다.",
                 "pokemon": ["갈가부기", "드레디어"],
+                "image": "",
             },
             {
                 "name": "순무",
@@ -580,6 +641,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "불꽃 타입 포켓몬 전문",
                 "desc": "노련한 베테랑 관장으로, 한때 마이너리그로 강등되었다가 복귀했습니다.",
                 "pokemon": ["코터스"],
+                "image": "",
             },
             {
                 "name": "채두",
@@ -588,6 +650,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "격투 타입 포켓몬 전문",
                 "desc": "격투기 도장을 운영하며, 냉철한 승부 근성을 지닌 관장입니다.",
                 "pokemon": ["파이서치"],
+                "image": "",
             },
             {
                 "name": "어니언",
@@ -596,6 +659,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "고스트 타입 포켓몬 전문",
                 "desc": "말수가 적고 게임을 좋아하는 소년 고스트 타입 전문 관장입니다.",
                 "pokemon": ["다크펫"],
+                "image": "",
             },
             {
                 "name": "포플러",
@@ -604,6 +668,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "페어리 타입 포켓몬 전문",
                 "desc": "고령에도 화려한 패션 감각을 뽐내는 페어리 타입 전문 관장입니다.",
                 "pokemon": ["픽시"],
+                "image": "",
             },
             {
                 "name": "두송",
@@ -612,6 +677,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "악 타입 포켓몬 전문 / 싱어송라이터",
                 "desc": "가라르지방 최초의 악 타입 체육관 관장이자, 밴드 활동도 하는 인물입니다.",
                 "pokemon": ["오브스타"],
+                "image": "",
             },
             {
                 "name": "금랑",
@@ -620,6 +686,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "드래곤 타입 포켓몬 전문",
                 "desc": "챔피언 단델의 라이벌로, 가라르지방 최강급으로 꼽히는 관장입니다.",
                 "pokemon": ["우락훌라"],
+                "image": "",
             },
             {
                 "name": "단델",
@@ -628,6 +695,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "올라운더",
                 "desc": "10년 넘게 무패를 자랑하는 가라르지방의 인기 절정 챔피언입니다.",
                 "pokemon": ["다이나맥스 리자몽"],
+                "image": "",
             },
         ],
     },
@@ -641,6 +709,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "벌레 타입 포켓몬 전문",
                 "desc": "파티시에로도 활동하는 팔데아지방 첫 체육관 관장입니다.",
                 "pokemon": ["또도바스"],
+                "image": "",
             },
             {
                 "name": "콜사",
@@ -649,6 +718,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "풀 타입 포켓몬 전문",
                 "desc": "예술가로 활동하며 풀 포켓몬을 활용한 작품을 만드는 관장입니다.",
                 "pokemon": ["파이어스"],
+                "image": "",
             },
             {
                 "name": "모야모",
@@ -657,6 +727,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "전기 타입 포켓몬 전문",
                 "desc": "스트리머로도 활동하는 개성 넘치는 전기 타입 전문 관장입니다.",
                 "pokemon": ["무테나"],
+                "image": "",
             },
             {
                 "name": "곤포",
@@ -665,6 +736,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "물 타입 포켓몬 전문",
                 "desc": "요리사로도 활동하는 물 타입 전문 체육관 관장입니다.",
                 "pokemon": ["웨이니발"],
+                "image": "",
             },
             {
                 "name": "청목",
@@ -673,6 +745,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "노말 타입 포켓몬 전문",
                 "desc": "체육관 관장과 사천왕(비행 타입)을 동시에 겸임하는 특이한 인물입니다.",
                 "pokemon": ["따르지비"],
+                "image": "",
             },
             {
                 "name": "라임",
@@ -681,6 +754,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "고스트 타입 포켓몬 전문",
                 "desc": "래퍼로도 활동하는 개성 강한 고스트 타입 전문 관장입니다.",
                 "pokemon": ["킬가르도"],
+                "image": "",
             },
             {
                 "name": "리파",
@@ -689,6 +763,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "에스퍼 타입 포켓몬 전문",
                 "desc": "메이크업 아티스트로도 활동하는 에스퍼 타입 전문 관장입니다.",
                 "pokemon": ["누리레느"],
+                "image": "",
             },
             {
                 "name": "그루샤",
@@ -697,6 +772,7 @@ CHARACTER_GENERATIONS = {
                 "specialty": "얼음 타입 포켓몬 전문",
                 "desc": "프로 스노보더 출신으로, 팔데아지방 최강으로 꼽히는 관장입니다.",
                 "pokemon": ["얼음귀신"],
+                "image": "",
             },
         ],
     },
@@ -714,6 +790,7 @@ CHARACTER_GENERATIONS = {
                     " 인물입니다."
                 ),
                 "pokemon": ["창파나이트", "알통몬"],
+                "image": "",
             },
             {
                 "name": "주이",
@@ -725,6 +802,7 @@ CHARACTER_GENERATIONS = {
                     " 보이지만 포켓몬들을 깊이 아끼는 캡틴입니다."
                 ),
                 "pokemon": ["잠만보"],
+                "image": "",
             },
             {
                 "name": "윤열",
@@ -737,6 +815,7 @@ CHARACTER_GENERATIONS = {
                     " 공존을 위해 철저함을 유지합니다."
                 ),
                 "pokemon": ["픽시", "윈디"],
+                "image": "",
             },
             {
                 "name": "폐기",
@@ -748,6 +827,7 @@ CHARACTER_GENERATIONS = {
                     " 조사대를 이끄는 든든한 리더입니다."
                 ),
                 "pokemon": ["레트라", "후딘"],
+                "image": "",
             },
         ],
     },
