@@ -1427,16 +1427,20 @@ elif st.session_state.current_page == "포켓몬 도감":
         "<h3 class='section-title'>📦 세대별 도감 선택</h3>", unsafe_allow_html=True
     )
 
-    all_menu_items = list(GENERATIONS.keys()) + ["전국 도감"]
+    row1 = ["1세대 (관동)", "2세대 (성도)", "3세대 (호연)"]
+    row2 = ["4세대 (신오)", "5세대 (하나)", "6세대 (칼로스)"]
+    row3 = ["7세대 (알로라)", "8세대 (가라르)", "9세대 (팔데아)"]
+    row4 = [None, "전국 도감", None]  # 8세대(가라르) 바로 아래에 전국 도감 배치
 
-    for r in range(4):
+    layout_rows = [row1, row2, row3, row4]
+
+    for r_idx, r_items in enumerate(layout_rows):
       cols = st.columns(3)
-      for c in range(3):
-        idx = r * 3 + c
-        if idx < len(all_menu_items):
-          item_name = all_menu_items[idx]
-          with cols[c]:
-            if item_name == "전국 도감":
+      for c_idx, item_name in enumerate(r_items):
+        if item_name is None:
+          continue
+        with cols[c_idx]:
+          if item_name == "전국 도감":
               st.markdown(
                   """
                   <div class="gen-banner" style="background-color: #2F3640;">
@@ -1453,7 +1457,7 @@ elif st.session_state.current_page == "포켓몬 도감":
               ):
                 go_to_page("전국 도감")
                 st.rerun()
-            else:
+          else:
               g_info = GENERATIONS[item_name]
               start, end = g_info["range"]
               st.markdown(
@@ -1467,7 +1471,7 @@ elif st.session_state.current_page == "포켓몬 도감":
               )
               if st.button(
                   f"{item_name} 도감 입장",
-                  key=f"gen_btn_{idx}",
+                  key=f"gen_btn_{r_idx}_{c_idx}",
                   use_container_width=True,
               ):
                 st.session_state.selected_gen = item_name
