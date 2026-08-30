@@ -1440,16 +1440,47 @@ def render_type_table(grouped_data, is_defense=True):
     """
 
 
+def _translate_via_google(text):
+  encoded_text = urllib.parse.quote(text)
+  url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q={encoded_text}"
+  headers = {"User-Agent": "Mozilla/5.0 (compatible; PokedexApp/1.0)"}
+  res = requests.get(url, headers=headers, timeout=6)
+  if res.status_code == 200:
+    data = res.json()
+    result = "".join([item[0] for item in data[0] if item[0]])
+    if result.strip():
+      return result
+  return None
+
+
+def _translate_via_mymemory(text):
+  # 구글 번역 엔드포인트가 막히거나 실패했을 때를 대비한 보조 번역 API
+  url = "https://api.mymemory.translated.net/get"
+  params = {"q": text, "langpair": "en|ko"}
+  res = requests.get(url, params=params, timeout=6)
+  if res.status_code == 200:
+    data = res.json()
+    result = data.get("responseData", {}).get("translatedText")
+    if result and result.strip():
+      return result
+  return None
+
+
 def translate_to_ko(text):
-  try:
-    encoded_text = urllib.parse.quote(text)
-    url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q={encoded_text}"
-    res = requests.get(url, timeout=2)
-    if res.status_code == 200:
-      data = res.json()
-      return "".join([item[0] for item in data[0] if item[0]])
-  except Exception:
-    pass
+  if not text:
+    return text
+
+  # 두 번역 서비스를 순서대로 시도하고, 각 서비스마다 한 번 더 재시도한다.
+  for translate_fn in (_translate_via_google, _translate_via_mymemory):
+    for _attempt in range(2):
+      try:
+        result = translate_fn(text)
+        if result:
+          return result
+      except Exception:
+        continue
+
+  # 모든 번역 시도가 실패한 경우에만 원문(영문)을 그대로 반환한다.
   return text
 
 
