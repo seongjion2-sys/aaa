@@ -3217,53 +3217,7 @@ if st.session_state.current_page == "Main":
       "<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>",
       unsafe_allow_html=True,
   )
-  featured_pokemons = ["귀뚤뚜기    <div class="menu-card">
-            <div style="font-size: 2.0rem; margin-bottom: 6px;">📖</div>
-            <div style="font-weight: bold; font-size: 1.1rem; color: #008275; margin-bottom: 4px;">포켓몬 도감</div>
-            <div style="font-size: 0.8rem; color: #666;">세대별 포켓몬 목록 및 종족치 확인</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("세대별 도감", key="btn_pokedex", use_container_width=True):
-      go_to_page("포켓몬 도감")
-      st.rerun()
-
-  with col2:
-    st.markdown(
-        """
-        <div class="menu-card">
-            <div style="font-size: 2.0rem; margin-bottom: 6px;">👤</div>
-            <div style="font-weight: bold; font-size: 1.1rem; color: #008275; margin-bottom: 4px;">인물 도감</div>
-            <div style="font-size: 0.8rem; color: #666;">트레이너 및 체육관 관장 정보</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("인물 도감", key="btn_character", use_container_width=True):
-      go_to_page("인물 도감")
-      st.rerun()
-
-  with col3:
-    st.markdown(
-        """
-        <div class="menu-card">
-            <div style="font-size: 2.0rem; margin-bottom: 6px;">🎒</div>
-            <div style="font-weight: bold; font-size: 1.1rem; color: #008275; margin-bottom: 4px;">아이템 도감</div>
-            <div style="font-size: 0.8rem; color: #666;">배틀 도구 종류별 효과 정보</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("아이템 도감", key="btn_item", use_container_width=True):
-      go_to_page("아이템 도감")
-      st.rerun()
-
-  st.markdown(
-      "<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>",
-      unsafe_allow_html=True,
-  )
-  featured_pokemons = ["귀뚤뚜기", "딜리버드", "헤라크로스", "슬리프", "나무지기", "루브도"]
+  featured_pokemons = ["켄타로스", "식스테일", "가디", "슬리프", "나무지기", "루브도"]
   f_cols = st.columns(6)
   for idx, p_name in enumerate(featured_pokemons):
     img_url = get_featured_pokemon_image(p_name)
