@@ -1420,6 +1420,9 @@ FEATURED_POKEMON_MAP = {
     "슬리프": "drowzee",
     "나무지기": "treecko",
     "루브도": "smeargle",
+    "딜리버드": "delibird",
+    "귀뚤뚜기": "kricketot",
+    "헤라크로스": "heracross",
 }
 
 
