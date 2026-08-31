@@ -3217,7 +3217,7 @@ if st.session_state.current_page == "Main":
       "<h3 class='section-title'>✨ 오늘의 추천 포켓몬 갤러리</h3>",
       unsafe_allow_html=True,
   )
-  featured_pokemons = ["켄타로스", "식스테일", "가디", "슬리프", "나무지기", "루브도"]
+  featured_pokemons = ["딜리버드", "귀뚤뚜기", "헤라크로스", "슬리프", "나무지기", "루브도"]
   f_cols = st.columns(6)
   for idx, p_name in enumerate(featured_pokemons):
     img_url = get_featured_pokemon_image(p_name)
