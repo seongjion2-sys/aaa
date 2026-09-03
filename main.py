@@ -2112,6 +2112,20 @@ def get_special_forms(species_data, base_ko_name, species_name):
           "원래의 끔찍하고 거대한 원래의 모습을 되찾아 모든 것을 꿰뚫는"
           " 파괴력을 가집니다."
       )
+    elif "-eternamax" in v_name:
+      form_type = "무한다이맥스"
+      form_ko_title = f"무한다이맥스 {base_ko_name}"
+      form_desc = (
+          "가라르지방의 대지에서 솟아나는 방대한 에너지를 남김없이 흡수하여,"
+          " 상상을 초월하는 크기로 변화한 궁극의 모습입니다."
+      )
+    elif "-gmax" in v_name:
+      form_type = "거다이맥스"
+      form_ko_title = f"거다이맥스 {base_ko_name}"
+      form_desc = (
+          "다이맥스 에너지가 특히 짙은 특정 지역에서, 일반적인 다이맥스와는"
+          " 다른 독특하고 거대한 모습으로 변화한 거다이맥스 모습입니다."
+      )
     elif "-eternal" in v_name:
       form_type = "영원의꽃"
       form_ko_title = f"{base_ko_name} (영원의 꽃)"
@@ -2128,16 +2142,17 @@ def get_special_forms(species_data, base_ko_name, species_name):
       continue
 
     try:
-      p_res = requests.get(v["pokemon"]["url"], timeout=2)
+      p_res = requests.get(v["pokemon"]["url"], timeout=5)
       if p_res.status_code == 200:
         p_data = p_res.json()
-        img_url = (
-            p_data["sprites"]["other"]["official-artwork"]["front_default"]
-            or p_data["sprites"]["front_default"]
+        sprites = p_data.get("sprites") or {}
+        other_sprites = sprites.get("other") or {}
+        artwork = other_sprites.get("official-artwork") or {}
+        img_url = artwork.get("front_default") or sprites.get(
+            "front_default"
         )
-        shiny_img_url = (
-            p_data["sprites"]["other"]["official-artwork"]["front_shiny"]
-            or p_data["sprites"]["shiny_default"]
+        shiny_img_url = artwork.get("front_shiny") or sprites.get(
+            "shiny_default"
         )
 
         types_raw = [t["type"]["name"] for t in p_data["types"]]
